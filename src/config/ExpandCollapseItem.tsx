@@ -7,7 +7,7 @@ import ExpandMore from '@material-ui/icons/ExpandMore';
 import Collapse from '@material-ui/core/Collapse';
 
 const useStyles = makeStyles({
-  root: {
+  listItem: {
     backgroundColor: 'white'
   },
   expandSection: {
@@ -30,13 +30,13 @@ export function ExpandCollapseItem(props: ExpandCollapseItemProps) {
   const handleExpand = () => {
     setExpand(!expand);
   }
-  return <div>
-    <ListItem className={classes.root} button onClick={handleExpand}>
+  return <>
+    <ListItem className={classes.listItem} button onClick={handleExpand}>
       <ListItemText primary={props.header} />
       {expand ? <ExpandLess /> : <ExpandMore />}
     </ListItem>
     <Collapse in={expand} timeout="auto">
       <div className={classes.expandSection}>{props.children}</div>
     </Collapse>
-  </div>;
+  </>;
 }

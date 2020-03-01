@@ -1,24 +1,46 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import Grid from '@material-ui/core/Grid';
 import List from '@material-ui/core/List';
 import Divider from '@material-ui/core/Divider';
 import Typography from '@material-ui/core/Typography';
+import Button from '@material-ui/core/Button';
+import TextField from '@material-ui/core/TextField';
 
 import { ExpandCollapseItem } from './config/ExpandCollapseItem';
+import { PuzzleDescription } from './config/PuzzleDescription';
 
 const useStyles = makeStyles({
   root: {
     width: '90%',
     margin: 'auto'
-  },
-  spacing: {
-    marginBottom: '32px'
   }
 });
 
 function App() {
   const classes = useStyles();
+  const [castlePoints, setCastlePoints] = useState(Array.from(Array(10).keys()).map(x => x + 1));
+
+  const handleNumCastlesChanged = (e: any) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value) && value >= 2) {
+      if (value < castlePoints.length) {
+        setCastlePoints(castlePoints.slice(0, value));
+      } else if (value > castlePoints.length) {
+        const zeroed = Array(value - castlePoints.length).fill(0);
+        setCastlePoints(castlePoints.concat(zeroed));
+      }
+    }
+  }
+
+  const handleCastlePointChanged = (e: any, i: number) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value) && value >= 0) {
+      const copy = [...castlePoints];
+      copy[i] = value;
+      setCastlePoints(copy);
+    }
+  }
 
   return (
     <div className={classes.root}>
@@ -27,20 +49,24 @@ function App() {
         <Grid item xs={4}>
           <List>
             <ExpandCollapseItem header="Description" expand={true}>
-              <Typography className={classes.spacing} variant="subtitle2">The following puzzle is from <a href="https://fivethirtyeight.com/features/can-you-rule-riddler-nation/" target="_blank" rel="noopener noreferrer">FiveThirtyEight</a>:</Typography>
-              <Typography gutterBottom>In a distant, war-torn land, there are 10 castles. There are two warlords: you and your archenemy.</Typography>
-              <Typography gutterBottom>Each castle has its own strategic value for a would-be conqueror. Specifically, the castles are worth 1, 2, 3, …, 9, and 10 victory points.</Typography>
-              <Typography gutterBottom>You and your enemy each have 100 soldiers to distribute, any way you like, to fight at any of the 10 castles. Whoever sends more soldiers to a given castle conquers that castle and wins its victory points. If you each send the same number of troops, you split the points.</Typography>
-              <Typography gutterBottom>You don’t know what distribution of forces your enemy has chosen until the battles begin.</Typography>
-              <Typography gutterBottom>Whoever wins the most points wins the war.</Typography>
-              <Divider className={classes.spacing} />
-              <Typography gutterBottom>The above battle royale will be played out amongst 100 bots. After all possible one-on-one matchups are finished, the bots will be evaluated by the number of wars won.</Typography>
-              <Typography gutterBottom>Selection, crossover, and mutation will be applied accordingly using this metric.</Typography>
-              <Typography>Visualisations will track how the population evolves over time.</Typography>
+              <PuzzleDescription castlePoints={castlePoints} />
             </ExpandCollapseItem>
             <Divider />
             <ExpandCollapseItem header="Puzzle Options" expand={false}>
-              test1
+              <div>
+                <TextField
+                  label="Number of castles"
+                  type="number"
+                  value={castlePoints.length}
+                  onChange={handleNumCastlesChanged}
+                />
+              </div>
+              {castlePoints.map((n, i) => <TextField key={i}
+                label={`Castle ${i + 1}`}
+                type="number"
+                value={n}
+                onChange={e => handleCastlePointChanged(e, i)}
+              />)}
             </ExpandCollapseItem>
             <Divider />
             <ExpandCollapseItem header="Genetic Algorithm Options" expand={false}>
@@ -49,6 +75,9 @@ function App() {
           </List>
         </Grid>
         <Grid item xs={8}>
+          <Grid container justify="flex-end">
+            <Button variant="contained" color="primary">Run Iteration</Button>
+          </Grid>
         </Grid>
       </Grid>
     </div>
