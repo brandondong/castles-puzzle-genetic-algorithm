@@ -19,24 +19,24 @@ const useStyles = makeStyles({
 
 type ExpandCollapseItemProps = {
   header: string,
-  expand: boolean,
+  defaultExpand: boolean,
   children: React.ReactNode
 }
 
-export function ExpandCollapseItem(props: ExpandCollapseItemProps) {
+export function ExpandCollapseItem({ defaultExpand, header, children }: ExpandCollapseItemProps) {
   const classes = useStyles();
-  const [expand, setExpand] = useState(props.expand);
+  const [expand, setExpand] = useState(defaultExpand);
 
   const handleExpand = () => {
     setExpand(!expand);
   }
   return <>
     <ListItem className={classes.listItem} button onClick={handleExpand}>
-      <ListItemText primary={props.header} />
+      <ListItemText primary={header} />
       {expand ? <ExpandLess /> : <ExpandMore />}
     </ListItem>
     <Collapse in={expand} timeout="auto">
-      <div className={classes.expandSection}>{props.children}</div>
+      <div className={classes.expandSection}>{children}</div>
     </Collapse>
   </>;
 }
