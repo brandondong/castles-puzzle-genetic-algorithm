@@ -1,56 +1,61 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import Grid from '@material-ui/core/Grid';
-import Button from '@material-ui/core/Button';
 import Typography from '@material-ui/core/Typography';
+import Slider from '@material-ui/core/Slider';
+
+import { GAActionsRow } from './GAActionsRow';
 
 const useStyles = makeStyles({
-  button: {
-    margin: '8px'
+  slider: {
+    width: '150px'
+  },
+  results: {
+    marginTop: '32px'
   }
 });
 
 export function GAVisualizer() {
   const classes = useStyles();
-  const [isRunning, setIsRunning] = useState(false);
-  const [generation, setGeneration] = useState(0);
 
   const handleReset = () => {
-    setIsRunning(false);
-    setGeneration(0);
+    console.log('reset');
   }
 
   const handleStep = () => {
-    setGeneration(generation + 1);
+    console.log('step');
   }
 
-  const handleRunPause = () => {
-    setIsRunning(!isRunning)
+  const handlePause = () => {
+    console.log('pause');
+  }
+
+  const handleRun = () => {
+    console.log('run');
   }
 
   return <>
-    <Grid container justify="flex-end">
-      <Button
-        className={classes.button}
-        disabled={generation === 0}
-        variant="outlined"
-        color="primary"
-        onClick={() => handleReset()}>Reset</Button>
-      <Button
-        className={classes.button}
-        variant="contained"
-        color="primary"
-        onClick={() => handleRunPause()}>
-        {isRunning ? 'Pause' : 'Run'}
-      </Button>
-      <Button
-        className={classes.button}
-        disabled={isRunning}
-        variant="contained"
-        color="secondary"
-        onClick={() => handleStep()}>Step</Button>
-    </Grid>
-    {generation !== 0 &&
-      <Typography variant="h6">{`Generation ${generation}:`}</Typography>}
+    <GAActionsRow
+      onPause={handlePause}
+      onReset={handleReset}
+      onStep={handleStep}
+      onRun={handleRun}
+    />
+    {false &&
+      <>
+        <Grid className={classes.results} container justify="flex-end">
+          <div>
+            <Typography gutterBottom>Overlay best N:</Typography>
+            <Slider
+              className={classes.slider}
+              defaultValue={30}
+              valueLabelDisplay="auto"
+              step={1}
+              min={1}
+              max={100}
+            />
+          </div>
+        </Grid>
+      </>}
   </>;
 }

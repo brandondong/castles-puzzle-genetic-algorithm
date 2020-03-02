@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import Grid from '@material-ui/core/Grid';
-import List from '@material-ui/core/List';
-import Divider from '@material-ui/core/Divider';
 import Typography from '@material-ui/core/Typography';
 
-import { ExpandCollapseItem } from './config/ExpandCollapseItem';
+import { ExpandCollapsePanel } from './config/ExpandCollapsePanel';
 import { PuzzleDescription } from './config/PuzzleDescription';
 import { PuzzleOptions } from './config/PuzzleOptions';
 import { GAVisualizer } from './visualize/GAVisualizer';
@@ -30,24 +28,18 @@ function App() {
       <Typography className={classes.title} variant="h3">Castles Puzzle Genetic Algorithm Visualizer</Typography>
       <Grid container spacing={4}>
         <Grid item xs={4}>
-          <List>
-            <ExpandCollapseItem header="Description" defaultExpand={true}>
-              <PuzzleDescription castlePoints={castlePoints} numSoldiers={numSoldiers} />
-            </ExpandCollapseItem>
-            <Divider />
-            <ExpandCollapseItem header="Puzzle Options" defaultExpand={false}>
-              <PuzzleOptions
-                castlePoints={castlePoints}
-                onCastlePointsChange={setCastlePoints}
-                numSoldiers={numSoldiers}
-                onNumSoldiersChange={setNumSoldiers}
-              />
-            </ExpandCollapseItem>
-            <Divider />
-            <ExpandCollapseItem header="Genetic Algorithm Options" defaultExpand={false}>
-              WIP
-            </ExpandCollapseItem>
-          </List>
+          <ExpandCollapsePanel defaultExpanded={true} header="Description">
+            <PuzzleDescription castlePoints={castlePoints} numSoldiers={numSoldiers} />
+          </ExpandCollapsePanel>
+          <ExpandCollapsePanel defaultExpanded={false} header="Puzzle Options">
+            <PuzzleOptions
+              castlePoints={castlePoints}
+              onCastlePointsChange={setCastlePoints}
+              numSoldiers={numSoldiers}
+              onNumSoldiersChange={setNumSoldiers}
+            />
+          </ExpandCollapsePanel>
+          <ExpandCollapsePanel defaultExpanded={false} header="Genetic Algorithm Options">WIP</ExpandCollapsePanel>
         </Grid>
         <Grid item xs={8}>
           <GAVisualizer />
