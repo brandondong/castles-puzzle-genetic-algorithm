@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
-import Grid from '@material-ui/core/Grid';
 import Button from '@material-ui/core/Button';
 
 const useStyles = makeStyles({
@@ -11,12 +10,10 @@ const useStyles = makeStyles({
 
 type GAActionsRowProps = {
   onReset: () => void,
-  onPause: () => void,
-  onRun: () => void,
   onStep: () => void
 }
 
-export function GAActionsRow({ onReset, onPause, onRun, onStep }: GAActionsRowProps) {
+export function GAActionsRow({ onReset, onStep }: GAActionsRowProps) {
   const classes = useStyles();
   const [isRunning, setIsRunning] = useState(false);
   const [generation, setGeneration] = useState(0);
@@ -28,21 +25,27 @@ export function GAActionsRow({ onReset, onPause, onRun, onStep }: GAActionsRowPr
   }
 
   const handleStep = () => {
-    setGeneration(generation + 1);
+    setGeneration(generation => generation + 1);
     onStep();
   }
 
   const handleRunPause = () => {
-    const nextIsRunning = !isRunning;
-    setIsRunning(nextIsRunning);
-    if (nextIsRunning) {
-      onRun();
-    } else {
-      onPause();
-    }
+    setIsRunning(!isRunning);
   }
 
-  return <Grid container justify={generation === 0 ? 'flex-end' : 'space-between'}>
+  useEffect(() => {
+    if (isRunning) {
+      const timer = setInterval(() => {
+        setGeneration(generation => generation + 1);
+        onStep();
+      }, 1000);
+      return () => {
+        clearInterval(timer);
+      }
+    }
+  }, [isRunning, setGeneration, onStep]);
+
+  return <>
     {generation !== 0 &&
       <Button
         className={classes.button}
@@ -53,26 +56,24 @@ export function GAActionsRow({ onReset, onPause, onRun, onStep }: GAActionsRowPr
             handleStep();
           }
         }}>{`Generation ${generation}`}</Button>}
-    <div>
-      <Button
-        className={classes.button}
-        disabled={generation === 0}
-        variant="outlined"
-        color="primary"
-        onClick={() => handleReset()}>Reset</Button>
-      <Button
-        className={classes.button}
-        variant="contained"
-        color="primary"
-        onClick={() => handleRunPause()}>
-        {isRunning ? 'Pause' : 'Run'}
-      </Button>
-      <Button
-        className={classes.button}
-        disabled={isRunning}
-        variant="contained"
-        color="secondary"
-        onClick={() => handleStep()}>Step</Button>
-    </div>
-  </Grid>;
+    <Button
+      className={classes.button}
+      disabled={generation === 0}
+      variant="outlined"
+      color="primary"
+      onClick={() => handleReset()}>Reset</Button>
+    <Button
+      className={classes.button}
+      variant="contained"
+      color="primary"
+      onClick={() => handleRunPause()}>
+      {isRunning ? 'Pause' : 'Run'}
+    </Button>
+    <Button
+      className={classes.button}
+      disabled={isRunning}
+      variant="contained"
+      color="secondary"
+      onClick={() => handleStep()}>Step</Button>
+  </>;
 }

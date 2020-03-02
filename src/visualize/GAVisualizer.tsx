@@ -26,21 +26,13 @@ export function GAVisualizer() {
     console.log('step');
   }
 
-  const handlePause = () => {
-    console.log('pause');
-  }
-
-  const handleRun = () => {
-    console.log('run');
-  }
-
   return <>
-    <GAActionsRow
-      onPause={handlePause}
-      onReset={handleReset}
-      onStep={handleStep}
-      onRun={handleRun}
-    />
+    <Grid container justify="flex-end">
+      <GAActionsRow
+        onReset={handleReset}
+        onStep={handleStep}
+      />
+    </Grid>
     {false &&
       <>
         <Grid className={classes.results} container justify="flex-end">
