@@ -28,7 +28,7 @@ function App() {
       <Typography className={classes.title} variant="h3">Castles Puzzle Genetic Algorithm Visualizer</Typography>
       <Grid container spacing={4}>
         <Grid item xs={4}>
-          <ExpandCollapsePanel defaultExpanded={true} header="Description">
+          <ExpandCollapsePanel defaultExpanded={true} header="Overview">
             <PuzzleDescription castlePoints={castlePoints} numSoldiers={numSoldiers} />
           </ExpandCollapsePanel>
           <ExpandCollapsePanel defaultExpanded={false} header="Puzzle Options">
@@ -42,7 +42,7 @@ function App() {
           <ExpandCollapsePanel defaultExpanded={false} header="Genetic Algorithm Options">WIP</ExpandCollapsePanel>
         </Grid>
         <Grid item xs={8}>
-          <GAVisualizer />
+          <GAVisualizer castlePoints={castlePoints} numSoldiers={numSoldiers} />
         </Grid>
       </Grid>
     </div>

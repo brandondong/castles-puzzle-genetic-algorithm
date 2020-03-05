@@ -30,7 +30,11 @@ export function GAActionsRow({ onReset, onStep }: GAActionsRowProps) {
   }
 
   const handleRunPause = () => {
-    setIsRunning(!isRunning);
+    const nextIsRunning = !isRunning;
+    setIsRunning(nextIsRunning);
+    if (nextIsRunning) {
+      handleStep();
+    }
   }
 
   useEffect(() => {

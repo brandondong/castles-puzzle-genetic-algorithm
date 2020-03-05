@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import Grid from '@material-ui/core/Grid';
 import Typography from '@material-ui/core/Typography';
 import Slider from '@material-ui/core/Slider';
 
 import { GAActionsRow } from './GAActionsRow';
+import { generateRandomIndividuals, evaluatePopulation } from './util';
 
 const useStyles = makeStyles({
   slider: {
@@ -15,15 +16,35 @@ const useStyles = makeStyles({
   }
 });
 
-export function GAVisualizer() {
+type GenerationResult = {
+  population: number[][],
+  scores: number[],
+  castlePoints: number[] // Victory points snapshotted at the time of the first generation.
+}
+
+type GAVisualizerProps = {
+  castlePoints: number[],
+  numSoldiers: number
+}
+
+export function GAVisualizer({ numSoldiers, castlePoints }: GAVisualizerProps) {
   const classes = useStyles();
+  const [generation, setGeneration] = useState<GenerationResult | undefined>(undefined);
 
   const handleReset = () => {
-    console.log('reset');
+    setGeneration(undefined);
   }
 
   const handleStep = () => {
-    console.log('step');
+    if (generation === undefined) {
+      const population = generateRandomIndividuals(100, numSoldiers, castlePoints.length);
+      const scores = evaluatePopulation(population, castlePoints);
+      setGeneration({
+        population: population,
+        castlePoints: castlePoints,
+        scores: scores
+      });
+    }
   }
 
   return <>
@@ -33,11 +54,11 @@ export function GAVisualizer() {
         onStep={handleStep}
       />
     </Grid>
-    {false &&
+    {generation !== undefined &&
       <>
         <Grid className={classes.results} container justify="flex-end">
           <div>
-            <Typography gutterBottom>Overlay best N:</Typography>
+            <Typography gutterBottom>Highlight best N:</Typography>
             <Slider
               className={classes.slider}
               defaultValue={30}
