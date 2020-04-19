@@ -1,4 +1,7 @@
+const wasm = import("wasm");
+
 export function generateRandomIndividuals(n: number, numSoldiers: number, numCastles: number) {
+  wasm.then(wasm => wasm.greet());
   const individuals = [];
   for (let i = 0; i < n; i++) {
     // Generate points from 0 to 1.
