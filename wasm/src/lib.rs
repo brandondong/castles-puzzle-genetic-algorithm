@@ -1,5 +1,6 @@
 mod utils;
 
+use js_sys::Math;
 use wasm_bindgen::prelude::*;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
@@ -9,11 +10,15 @@ use wasm_bindgen::prelude::*;
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[wasm_bindgen]
-extern {
-    fn alert(s: &str);
-}
+pub struct GeneticAlgorithm {}
 
 #[wasm_bindgen]
-pub fn greet() {
-    alert("Hello, wasm!");
+impl GeneticAlgorithm {
+    pub fn new() -> GeneticAlgorithm {
+        GeneticAlgorithm {}
+    }
+
+    pub fn run_generation(&mut self) -> f64 {
+        Math::random()
+    }
 }
