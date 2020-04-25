@@ -1,3 +1,5 @@
+#[cfg(test)]
+mod tests;
 mod utils;
 
 use js_sys::Math;
@@ -12,6 +14,7 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 #[wasm_bindgen]
 pub struct GeneticAlgorithm {
     current_generation: Option<Vec<IndividualResult>>,
+    castle_points: Vec<u32>,
 }
 
 #[wasm_bindgen]
@@ -19,14 +22,18 @@ impl GeneticAlgorithm {
     pub fn new(
         num_individuals: u32,
         castle_points: Vec<u32>,
-        numSoldiers: u32,
+        num_soldiers: u32,
     ) -> GeneticAlgorithm {
         GeneticAlgorithm {
             current_generation: None,
+            castle_points,
         }
     }
 
     /// Runs the next generation, returning details about the individuals and their scores achieved.
+    ///
+    /// Results are flattened in order to be passed back out of wasm.
+    /// The format is [individual 1 castle 1 soldiers, i1c2, ..., i1 score, i2c1, ...].
     pub fn run_generation(&mut self) -> Vec<u32> {
         // Create the next generation.
         let generation = match &self.current_generation {
@@ -61,19 +68,87 @@ impl GeneticAlgorithm {
     }
 
     fn evaluate(&self, individuals: Vec<Individual>) -> Vec<IndividualResult> {
-        todo!();
+        let mut scores = vec![0; individuals.len()];
+        // Evaluate every pair.
+        for i in 0..individuals.len() {
+            for j in i + 1..individuals.len() {
+                let i1 = &individuals[i];
+                let i2 = &individuals[j];
+                let result = i1.battle(i2, &self.castle_points);
+                match result {
+                    BattleResult::Win => {
+                        scores[i] += 1;
+                    }
+                    BattleResult::Loss => {
+                        scores[j] += 1;
+                    }
+                    BattleResult::Tie => (),
+                }
+            }
+        }
+        let mut results: Vec<IndividualResult> = individuals
+            .into_iter()
+            .enumerate()
+            .map(|(i, individual)| IndividualResult {
+                details: individual,
+                score: scores[i],
+            })
+            .collect();
+        // Sort better scoring individuals first.
+        results.sort_by(|a, b| b.score.cmp(&a.score));
+        results
     }
 
     fn flatten_for_wasm(results: &[IndividualResult]) -> Vec<u32> {
-        todo!();
+        results.iter().flat_map(|r| r.flatten_for_wasm()).collect()
     }
 }
 
+#[derive(Debug, PartialEq)]
 struct IndividualResult {
     details: Individual,
     score: u32,
 }
 
+impl IndividualResult {
+    fn flatten_for_wasm(&self) -> Vec<u32> {
+        let mut flattened = self.details.soldier_distribution.clone();
+        flattened.push(self.score);
+        flattened
+    }
+}
+
+#[derive(Debug, PartialEq)]
 struct Individual {
     soldier_distribution: Vec<u32>,
+}
+
+impl Individual {
+    fn battle(&self, other: &Individual, castle_points: &[u32]) -> BattleResult {
+        let mut score: i32 = 0;
+        for i in 0..castle_points.len() {
+            let soldiers = self.soldier_distribution[i];
+            let o_soldiers = other.soldier_distribution[i];
+            let points = castle_points[i];
+            if soldiers > o_soldiers {
+                score += points as i32;
+            } else if soldiers < o_soldiers {
+                score -= points as i32;
+            }
+        }
+        if score > 0 {
+            BattleResult::Win
+        } else if score < 0 {
+            BattleResult::Loss
+        } else {
+            BattleResult::Tie
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+enum BattleResult {
+    Win,
+    Tie,
+    Loss,
 }
