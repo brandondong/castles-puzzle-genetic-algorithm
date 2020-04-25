@@ -15,6 +15,7 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 pub struct GeneticAlgorithm {
     current_generation: Option<Vec<IndividualResult>>,
     castle_points: Vec<u32>,
+    scoring: Scoring,
 }
 
 #[wasm_bindgen]
@@ -23,10 +24,12 @@ impl GeneticAlgorithm {
         num_individuals: u32,
         castle_points: Vec<u32>,
         num_soldiers: u32,
+        scoring: Scoring,
     ) -> GeneticAlgorithm {
         GeneticAlgorithm {
             current_generation: None,
             castle_points,
+            scoring,
         }
     }
 
@@ -74,15 +77,19 @@ impl GeneticAlgorithm {
             for j in i + 1..individuals.len() {
                 let i1 = &individuals[i];
                 let i2 = &individuals[j];
-                let result = i1.battle(i2, &self.castle_points);
-                match result {
-                    BattleResult::Win => {
-                        scores[i] += 1;
+                let (s1, s2) = i1.battle(i2, &self.castle_points);
+                match self.scoring {
+                    Scoring::Wins => {
+                        if s1 > s2 {
+                            scores[i] += 1;
+                        } else if s1 < s2 {
+                            scores[j] += 1;
+                        }
                     }
-                    BattleResult::Loss => {
-                        scores[j] += 1;
+                    Scoring::Points => {
+                        scores[i] += s1;
+                        scores[j] += s2;
                     }
-                    BattleResult::Tie => (),
                 }
             }
         }
@@ -102,6 +109,12 @@ impl GeneticAlgorithm {
     fn flatten_for_wasm(results: &[IndividualResult]) -> Vec<u32> {
         results.iter().flat_map(|r| r.flatten_for_wasm()).collect()
     }
+}
+
+#[wasm_bindgen]
+pub enum Scoring {
+    Wins = 0,
+    Points = 1,
 }
 
 #[derive(Debug, PartialEq)]
@@ -124,31 +137,19 @@ struct Individual {
 }
 
 impl Individual {
-    fn battle(&self, other: &Individual, castle_points: &[u32]) -> BattleResult {
-        let mut score: i32 = 0;
+    fn battle(&self, other: &Individual, castle_points: &[u32]) -> (u32, u32) {
+        let mut score = 0;
+        let mut o_score = 0;
         for i in 0..castle_points.len() {
             let soldiers = self.soldier_distribution[i];
             let o_soldiers = other.soldier_distribution[i];
             let points = castle_points[i];
             if soldiers > o_soldiers {
-                score += points as i32;
+                score += points;
             } else if soldiers < o_soldiers {
-                score -= points as i32;
+                o_score += points;
             }
         }
-        if score > 0 {
-            BattleResult::Win
-        } else if score < 0 {
-            BattleResult::Loss
-        } else {
-            BattleResult::Tie
-        }
+        (score, o_score)
     }
-}
-
-#[derive(Debug, PartialEq)]
-enum BattleResult {
-    Win,
-    Tie,
-    Loss,
 }
