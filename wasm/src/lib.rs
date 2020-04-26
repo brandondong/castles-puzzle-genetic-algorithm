@@ -14,7 +14,9 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 #[wasm_bindgen]
 pub struct GeneticAlgorithm {
     current_generation: Option<Vec<IndividualResult>>,
+    num_individuals: u32,
     castle_points: Vec<u32>,
+    num_soldiers: u32,
     scoring: Scoring,
 }
 
@@ -28,7 +30,9 @@ impl GeneticAlgorithm {
     ) -> GeneticAlgorithm {
         GeneticAlgorithm {
             current_generation: None,
+            num_individuals,
             castle_points,
+            num_soldiers,
             scoring,
         }
     }
@@ -60,7 +64,39 @@ impl GeneticAlgorithm {
     }
 
     fn first_generation(&self) -> Vec<Individual> {
-        todo!();
+        (0..self.num_individuals)
+            .map(|_| {
+                let mut soldier_distribution = Vec::with_capacity(self.castle_points.len());
+                // Pick a partitioning of soldiers with uniform probability (i.e. [1, 1, 1] is equally likely as [3, 0, 0]).
+                // See https://en.wikipedia.org/wiki/Stars_and_bars_%28combinatorics%29.
+                // We have to choose bar indices from stars + bars total.
+                let choose = self.castle_points.len() as u32 - 1; // Bars (castle dividers).
+                let total = self.num_soldiers + choose; // Stars (soldiers) + bars.
+                let mut prev_index = -1;
+                // Knuth's algorithm:
+                let mut chosen = 0;
+                for i in 0..total {
+                    if chosen >= choose {
+                        break;
+                    }
+                    let remaining = total - i;
+                    let needed = choose - chosen;
+                    if Math::random() < needed as f64 / remaining as f64 {
+                        let current_index = i as i32;
+                        let num_soldiers = (current_index - prev_index - 1) as u32;
+                        soldier_distribution.push(num_soldiers);
+                        prev_index = current_index;
+                        chosen += 1;
+                    }
+                }
+                let current_index = total as i32;
+                let num_soldiers = (current_index - prev_index - 1) as u32;
+                soldier_distribution.push(num_soldiers);
+                Individual {
+                    soldier_distribution,
+                }
+            })
+            .collect()
     }
 
     fn generation_from_previous(
