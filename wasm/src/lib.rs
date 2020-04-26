@@ -103,7 +103,25 @@ impl GeneticAlgorithm {
         &self,
         previous_generation: &[IndividualResult],
     ) -> Vec<Individual> {
-        todo!();
+        let cumulative_sum: Vec<u32> = previous_generation
+            .iter()
+            .scan(0, |acc, i| {
+                *acc += i.score;
+                Some(*acc)
+            })
+            .collect();
+        (0..self.num_individuals)
+            .map(|_| {
+                // Roulette wheel selection for both parents.
+                let p1 = self.roulette_select(previous_generation, &cumulative_sum);
+                let p2 = self.roulette_select(previous_generation, &cumulative_sum);
+                // Crossover.
+                let mut child = self.cross_over(p1, p2);
+                // Mutation.
+                self.mutate(&mut child);
+                child
+            })
+            .collect()
     }
 
     fn evaluate(&self, individuals: Vec<Individual>) -> Vec<IndividualResult> {
@@ -142,8 +160,31 @@ impl GeneticAlgorithm {
         results
     }
 
+    fn roulette_select(
+        &self,
+        previous_generation: &[IndividualResult],
+        cumulative_sum: &[u32],
+    ) -> &Individual {
+        todo!();
+    }
+
+    fn cross_over(&self, p1: &Individual, p2: &Individual) -> Individual {
+        todo!();
+    }
+
+    fn mutate(&self, individual: &mut Individual) {
+        todo!();
+    }
+
     fn flatten_for_wasm(results: &[IndividualResult]) -> Vec<u32> {
-        results.iter().flat_map(|r| r.flatten_for_wasm()).collect()
+        results
+            .iter()
+            .flat_map(|r| {
+                let mut flattened = r.details.soldier_distribution.clone();
+                flattened.push(r.score);
+                flattened
+            })
+            .collect()
     }
 }
 
@@ -157,14 +198,6 @@ pub enum Scoring {
 struct IndividualResult {
     details: Individual,
     score: u32,
-}
-
-impl IndividualResult {
-    fn flatten_for_wasm(&self) -> Vec<u32> {
-        let mut flattened = self.details.soldier_distribution.clone();
-        flattened.push(self.score);
-        flattened
-    }
 }
 
 #[derive(Debug, PartialEq)]
