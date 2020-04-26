@@ -3,7 +3,7 @@ import { makeStyles } from '@material-ui/core/styles';
 import Grid from '@material-ui/core/Grid';
 import Typography from '@material-ui/core/Typography';
 import Slider from '@material-ui/core/Slider';
-import { GeneticAlgorithm } from "wasm";
+import { WasmGeneticAlgorithm } from "wasm";
 
 import { GAActionsRow } from './GAActionsRow';
 
@@ -25,7 +25,7 @@ type GAVisualizerProps = {
 
 export function GAVisualizer({ numSoldiers, castlePoints }: GAVisualizerProps) {
   const classes = useStyles();
-  const [algorithm, setAlgorithm] = useState<GeneticAlgorithm | undefined>(undefined);
+  const [algorithm, setAlgorithm] = useState<WasmGeneticAlgorithm | undefined>(undefined);
 
   const handleReset = () => {
     if (algorithm !== undefined) {
@@ -37,7 +37,7 @@ export function GAVisualizer({ numSoldiers, castlePoints }: GAVisualizerProps) {
   const handleStep = () => {
     if (algorithm === undefined) {
       wasm.then(wasm => {
-        const algorithm = wasm.GeneticAlgorithm.new(2, Uint32Array.from(castlePoints), numSoldiers, 1);
+        const algorithm = wasm.WasmGeneticAlgorithm.new(2, Uint32Array.from(castlePoints), numSoldiers, wasm.Scoring.Points);
         alert(algorithm.run_generation());
         setAlgorithm(algorithm);
       });

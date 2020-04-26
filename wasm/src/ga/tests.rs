@@ -1,25 +1,6 @@
 use super::*;
 
 #[test]
-fn test_flatten() {
-    let results = vec![
-        IndividualResult {
-            details: Individual {
-                soldier_distribution: vec![1, 2],
-            },
-            score: 3,
-        },
-        IndividualResult {
-            details: Individual {
-                soldier_distribution: vec![4, 5],
-            },
-            score: 6,
-        },
-    ];
-    assert_eq!(flatten_for_wasm(&results), vec![1, 2, 3, 4, 5, 6]);
-}
-
-#[test]
 fn test_pair_battle() {
     let i1 = Individual {
         soldier_distribution: vec![1, 2],
@@ -47,8 +28,7 @@ fn test_evaluate_individuals_wars_won() {
         },
     ];
     let castle_points = vec![5, 10];
-    let ga = GeneticAlgorithm::new(3, castle_points, 3, Scoring::Wins);
-    let results = ga.evaluate(individuals);
+    let results = evaluate(individuals, &castle_points, &Scoring::Wins);
     assert_eq!(
         results,
         vec![
@@ -88,8 +68,7 @@ fn test_evaluate_individuals_points() {
         },
     ];
     let castle_points = vec![5, 10];
-    let ga = GeneticAlgorithm::new(3, castle_points, 3, Scoring::Points);
-    let results = ga.evaluate(individuals);
+    let results = evaluate(individuals, &castle_points, &Scoring::Points);
     assert_eq!(
         results,
         vec![
