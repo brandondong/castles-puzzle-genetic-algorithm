@@ -16,10 +16,7 @@ fn test_flatten() {
             score: 6,
         },
     ];
-    assert_eq!(
-        GeneticAlgorithm::flatten_for_wasm(&results),
-        vec![1, 2, 3, 4, 5, 6]
-    );
+    assert_eq!(flatten_for_wasm(&results), vec![1, 2, 3, 4, 5, 6]);
 }
 
 #[test]

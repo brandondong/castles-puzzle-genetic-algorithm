@@ -56,7 +56,7 @@ impl GeneticAlgorithm {
 
         // Evaluate scores for each individual.
         let generation_results = self.evaluate(generation);
-        let wasm_results = GeneticAlgorithm::flatten_for_wasm(&generation_results);
+        let wasm_results = flatten_for_wasm(&generation_results);
         // Remember results for the next round.
         self.current_generation = Some(generation_results);
 
@@ -160,12 +160,24 @@ impl GeneticAlgorithm {
         results
     }
 
-    fn roulette_select(
+    fn roulette_select<'a>(
         &self,
-        previous_generation: &[IndividualResult],
+        previous_generation: &'a [IndividualResult],
         cumulative_sum: &[u32],
-    ) -> &Individual {
-        todo!();
+    ) -> &'a Individual {
+        let total_sum = *cumulative_sum.last().unwrap(); // e.g. [3, 5] -> 5.
+        let p = (Math::random() * total_sum as f64) as u32 + 1; // Random number from 1 to 5.
+        let r = cumulative_sum.binary_search(&p);
+        match r {
+            Ok(index) => {
+                // e.g. Search with 3, receive index 0.
+                &previous_generation[index].details
+            }
+            Err(index) => {
+                // e.g. Search with 2, receive index 0.
+                &previous_generation[index].details
+            }
+        }
     }
 
     fn cross_over(&self, p1: &Individual, p2: &Individual) -> Individual {
@@ -175,17 +187,17 @@ impl GeneticAlgorithm {
     fn mutate(&self, individual: &mut Individual) {
         todo!();
     }
+}
 
-    fn flatten_for_wasm(results: &[IndividualResult]) -> Vec<u32> {
-        results
-            .iter()
-            .flat_map(|r| {
-                let mut flattened = r.details.soldier_distribution.clone();
-                flattened.push(r.score);
-                flattened
-            })
-            .collect()
-    }
+fn flatten_for_wasm(results: &[IndividualResult]) -> Vec<u32> {
+    results
+        .iter()
+        .flat_map(|r| {
+            let mut flattened = r.details.soldier_distribution.clone();
+            flattened.push(r.score);
+            flattened
+        })
+        .collect()
 }
 
 #[wasm_bindgen]
