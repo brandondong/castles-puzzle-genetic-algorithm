@@ -29,6 +29,7 @@ wee_alloc = { version = "0.4.2", optional = true }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.2"
+rand = "0.7"
 
 [profile.release]
 # Tell `rustc` to optimize for small code size.

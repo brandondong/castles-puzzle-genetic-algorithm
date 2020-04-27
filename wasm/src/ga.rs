@@ -35,7 +35,15 @@ impl<R: RandomProvider> GeneticAlgorithm<R> {
         let generation = match &self.current_generation {
             None => {
                 // First generation.
-                self.first_generation()
+                (0..self.num_individuals)
+                    .map(|_| {
+                        uniform_random_individual(
+                            self.castle_points.len(),
+                            self.num_soldiers,
+                            &self.random,
+                        )
+                    })
+                    .collect()
             }
             Some(previous_generation) => {
                 // Use the scores of the previous to create the new generation.
@@ -49,42 +57,6 @@ impl<R: RandomProvider> GeneticAlgorithm<R> {
         self.current_generation = Some(generation_results);
 
         self.current_generation.as_ref().unwrap()
-    }
-
-    fn first_generation(&self) -> Vec<Individual> {
-        (0..self.num_individuals)
-            .map(|_| {
-                let mut soldier_distribution = Vec::with_capacity(self.castle_points.len());
-                // Pick a partitioning of soldiers with uniform probability (i.e. [1, 1, 1] is equally likely as [3, 0, 0]).
-                // See https://en.wikipedia.org/wiki/Stars_and_bars_%28combinatorics%29.
-                // We have to choose bar indices from stars + bars total.
-                let choose = self.castle_points.len() as u32 - 1; // Bars (castle dividers).
-                let total = self.num_soldiers + choose; // Stars (soldiers) + bars.
-                let mut prev_index = -1;
-                // Knuth's algorithm:
-                let mut chosen = 0;
-                for i in 0..total {
-                    if chosen >= choose {
-                        break;
-                    }
-                    let remaining = total - i;
-                    let needed = choose - chosen;
-                    if self.random.random() < needed as f64 / remaining as f64 {
-                        let current_index = i as i32;
-                        let num_soldiers = (current_index - prev_index - 1) as u32;
-                        soldier_distribution.push(num_soldiers);
-                        prev_index = current_index;
-                        chosen += 1;
-                    }
-                }
-                let current_index = total as i32;
-                let num_soldiers = (current_index - prev_index - 1) as u32;
-                soldier_distribution.push(num_soldiers);
-                Individual {
-                    soldier_distribution,
-                }
-            })
-            .collect()
     }
 
     fn generation_from_previous(
@@ -101,8 +73,8 @@ impl<R: RandomProvider> GeneticAlgorithm<R> {
         (0..self.num_individuals)
             .map(|_| {
                 // Roulette wheel selection for both parents.
-                let p1 = self.roulette_select(previous_generation, &cumulative_sum);
-                let p2 = self.roulette_select(previous_generation, &cumulative_sum);
+                let p1 = roulette_select(previous_generation, &cumulative_sum, &self.random);
+                let p2 = roulette_select(previous_generation, &cumulative_sum, &self.random);
                 // Crossover.
                 let mut child = self.cross_over(p1, p2);
                 // Mutation.
@@ -111,32 +83,67 @@ impl<R: RandomProvider> GeneticAlgorithm<R> {
             })
             .collect()
     }
-
-    fn roulette_select<'a>(
-        &self,
-        previous_generation: &'a [IndividualResult],
-        cumulative_sum: &[u32],
-    ) -> &'a Individual {
-        let total_sum = *cumulative_sum.last().unwrap(); // e.g. [3, 5] -> 5.
-        let p = (self.random.random() * total_sum as f64) as u32 + 1; // Random number from 1 to 5.
-        let r = cumulative_sum.binary_search(&p);
-        match r {
-            Ok(index) => {
-                // e.g. Search with 3, receive index 0.
-                &previous_generation[index].details
-            }
-            Err(index) => {
-                // e.g. Search with 2, receive index 0.
-                &previous_generation[index].details
-            }
-        }
-    }
-
     fn cross_over(&self, p1: &Individual, p2: &Individual) -> Individual {
         todo!();
     }
     fn mutate(&self, individual: &mut Individual) {
         todo!();
+    }
+}
+
+fn uniform_random_individual(
+    num_castles: usize,
+    num_soldiers: u32,
+    random: &impl RandomProvider,
+) -> Individual {
+    let mut soldier_distribution = Vec::with_capacity(num_castles);
+    // Pick a partitioning of soldiers with uniform probability (i.e. [1, 1, 1] is equally likely as [3, 0, 0]).
+    // See https://en.wikipedia.org/wiki/Stars_and_bars_%28combinatorics%29.
+    // We have to choose bar indices from stars + bars total.
+    let choose = num_castles as u32 - 1; // Bars (castle dividers).
+    let total = num_soldiers + choose; // Stars (soldiers) + bars.
+    let mut prev_index = -1;
+    // Knuth's algorithm:
+    let mut chosen = 0;
+    for i in 0..total {
+        if chosen >= choose {
+            break;
+        }
+        let remaining = total - i;
+        let needed = choose - chosen;
+        if random.random() < needed as f64 / remaining as f64 {
+            let current_index = i as i32;
+            let num_soldiers = (current_index - prev_index - 1) as u32;
+            soldier_distribution.push(num_soldiers);
+            prev_index = current_index;
+            chosen += 1;
+        }
+    }
+    let current_index = total as i32;
+    let num_soldiers = (current_index - prev_index - 1) as u32;
+    soldier_distribution.push(num_soldiers);
+    Individual {
+        soldier_distribution,
+    }
+}
+
+fn roulette_select<'a>(
+    previous_generation: &'a [IndividualResult],
+    cumulative_sum: &[u32],
+    random: &impl RandomProvider,
+) -> &'a Individual {
+    let total_sum = *cumulative_sum.last().unwrap(); // e.g. [3, 5] -> 5.
+    let p = (random.random() * total_sum as f64) as u32 + 1; // Random number from 1 to 5.
+    let r = cumulative_sum.binary_search(&p);
+    match r {
+        Ok(index) => {
+            // e.g. Search with 3, receive index 0.
+            &previous_generation[index].details
+        }
+        Err(index) => {
+            // e.g. Search with 2, receive index 0.
+            &previous_generation[index].details
+        }
     }
 }
 
