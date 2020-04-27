@@ -76,16 +76,14 @@ impl<R: RandomProvider> GeneticAlgorithm<R> {
                 let p1 = roulette_select(previous_generation, &cumulative_sum, &self.random);
                 let p2 = roulette_select(previous_generation, &cumulative_sum, &self.random);
                 // Crossover.
-                let mut child = self.cross_over(p1, p2);
+                let mut child = crossover(p1, p2, &self.random);
                 // Mutation.
                 self.mutate(&mut child);
                 child
             })
             .collect()
     }
-    fn cross_over(&self, p1: &Individual, p2: &Individual) -> Individual {
-        todo!();
-    }
+
     fn mutate(&self, individual: &mut Individual) {
         todo!();
     }
@@ -144,6 +142,39 @@ fn roulette_select<'a>(
             // e.g. Search with 2, receive index 0.
             &previous_generation[index].details
         }
+    }
+}
+
+fn crossover(p1: &Individual, p2: &Individual, random: &impl RandomProvider) -> Individual {
+    let mut rounded_down = Vec::new();
+    let mut soldier_distribution = Vec::with_capacity(p1.soldier_distribution.len());
+    // Average the soldiers sent for each castle.
+    for i in 0..p1.soldier_distribution.len() {
+        let total = p1.soldier_distribution[i] + p2.soldier_distribution[i];
+        soldier_distribution.push(total / 2);
+        if total % 2 != 0 {
+            rounded_down.push(i);
+        }
+    }
+    let total = rounded_down.len();
+    // There must be an even number of indices rounded down.
+    let choose = total / 2;
+    // Knuth's algorithm:
+    let mut chosen = 0;
+    for i in 0..total {
+        if chosen >= choose {
+            break;
+        }
+        let remaining = total - i;
+        let needed = choose - chosen;
+        if random.random() < needed as f64 / remaining as f64 {
+            let index = rounded_down[i];
+            soldier_distribution[index] += 1;
+            chosen += 1;
+        }
+    }
+    Individual {
+        soldier_distribution,
     }
 }
 

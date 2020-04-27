@@ -50,6 +50,33 @@ fn test_roulette_select() {
 }
 
 #[test]
+fn test_cross_over_no_rounding() {
+    let i1 = Individual {
+        soldier_distribution: vec![2, 2, 0],
+    };
+    let i2 = Individual {
+        soldier_distribution: vec![2, 0, 2],
+    };
+    let child = crossover(&i1, &i2, &TestRandom);
+    assert_eq!(child.soldier_distribution, vec![2, 1, 1]);
+}
+
+#[test]
+fn test_cross_over_rounding() {
+    for _ in 0..10 {
+        let i1 = Individual {
+            soldier_distribution: vec![2, 3, 0],
+        };
+        let i2 = Individual {
+            soldier_distribution: vec![2, 0, 3],
+        };
+        let s = crossover(&i1, &i2, &TestRandom).soldier_distribution;
+        assert_eq!(s[0], 2);
+        assert!(s[1] == 1 && s[2] == 2 || s[1] == 2 && s[2] == 1);
+    }
+}
+
+#[test]
 fn test_pair_battle() {
     let i1 = Individual {
         soldier_distribution: vec![1, 2],
