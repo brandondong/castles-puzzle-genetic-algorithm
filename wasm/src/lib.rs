@@ -26,6 +26,7 @@ impl WasmGeneticAlgorithm {
         num_soldiers: u32,
         scoring: Scoring,
     ) -> WasmGeneticAlgorithm {
+        utils::set_panic_hook();
         WasmGeneticAlgorithm {
             algorithm: GeneticAlgorithm::new(
                 num_individuals,

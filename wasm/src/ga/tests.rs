@@ -10,6 +10,19 @@ impl RandomProvider for TestRandom {
 }
 
 #[test]
+fn test_end_to_end() {
+    let mut ga = GeneticAlgorithm::new(5, vec![1, 2, 3], 10, Scoring::Wins, TestRandom);
+    for _ in 0..10 {
+        let results = ga.run_generation();
+        assert_eq!(results.len(), 5);
+        for result in results {
+            let total_soldiers: u32 = result.details.soldier_distribution.iter().sum();
+            assert_eq!(total_soldiers, 10);
+        }
+    }
+}
+
+#[test]
 fn test_generate_random_individuals() {
     for num_soldiers in 1..10 {
         for num_castles in 3..10 {
@@ -42,11 +55,34 @@ fn test_roulette_select() {
             score: 1,
         },
     ];
-    let cumulative_sum = vec![3, 5, 6];
+    let cumulative_sum = vec![
+        (3, &prev_results[0].details),
+        (5, &prev_results[1].details),
+        (6, &prev_results[2].details),
+    ];
     for _ in 0..10 {
         // Can't really assert any properties, just ensure no panic.
         roulette_select(&prev_results, &cumulative_sum, &TestRandom);
     }
+}
+
+#[test]
+fn test_roulette_select_all_zero() {
+    let prev_results = vec![
+        IndividualResult {
+            details: Individual {
+                soldier_distribution: vec![1, 1],
+            },
+            score: 0,
+        },
+        IndividualResult {
+            details: Individual {
+                soldier_distribution: vec![1, 1],
+            },
+            score: 0,
+        },
+    ];
+    roulette_select(&prev_results, &Vec::new(), &TestRandom);
 }
 
 #[test]
@@ -73,6 +109,24 @@ fn test_cross_over_rounding() {
         let s = crossover(&i1, &i2, &TestRandom).soldier_distribution;
         assert_eq!(s[0], 2);
         assert!(s[1] == 1 && s[2] == 2 || s[1] == 2 && s[2] == 1);
+    }
+}
+
+#[test]
+fn test_mutate() {
+    // First castle is worth the most points and the second is worth the least.
+    let sorted_castles = vec![1, 2, 0];
+    for _ in 0..10 {
+        let mut i = Individual {
+            soldier_distribution: vec![3, 3, 3],
+        };
+        mutate(&mut i, &sorted_castles, &TestRandom);
+        let soldiers = i.soldier_distribution;
+        let total_soldiers: u32 = soldiers.iter().sum();
+        assert_eq!(total_soldiers, 9);
+        assert!(soldiers.iter().any(|&s| s == 3));
+        // Must not have swapped between the first and second castles.
+        assert!(soldiers[0] == 3 || soldiers[1] == 3);
     }
 }
 

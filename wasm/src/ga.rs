@@ -63,13 +63,18 @@ impl<R: RandomProvider> GeneticAlgorithm<R> {
         &self,
         previous_generation: &[IndividualResult],
     ) -> Vec<Individual> {
-        let cumulative_sum: Vec<u32> = previous_generation
+        let cumulative_sum: Vec<(u32, &Individual)> = previous_generation
             .iter()
+            .filter(|i| i.score != 0)
             .scan(0, |acc, i| {
                 *acc += i.score;
-                Some(*acc)
+                Some((*acc, &i.details))
             })
             .collect();
+        // Sort castle indices by points.
+        let mut sorted_castles: Vec<_> = self.castle_points.iter().enumerate().collect();
+        sorted_castles.sort_by(|a, b| a.1.cmp(b.1));
+        let sorted_castles: Vec<usize> = sorted_castles.iter().map(|a| a.0).collect();
         (0..self.num_individuals)
             .map(|_| {
                 // Roulette wheel selection for both parents.
@@ -78,14 +83,10 @@ impl<R: RandomProvider> GeneticAlgorithm<R> {
                 // Crossover.
                 let mut child = crossover(p1, p2, &self.random);
                 // Mutation.
-                self.mutate(&mut child);
+                mutate(&mut child, &sorted_castles, &self.random);
                 child
             })
             .collect()
-    }
-
-    fn mutate(&self, individual: &mut Individual) {
-        todo!();
     }
 }
 
@@ -127,20 +128,28 @@ fn uniform_random_individual(
 
 fn roulette_select<'a>(
     previous_generation: &'a [IndividualResult],
-    cumulative_sum: &[u32],
+    cumulative_sum: &'a [(u32, &Individual)],
     random: &impl RandomProvider,
 ) -> &'a Individual {
-    let total_sum = *cumulative_sum.last().unwrap(); // e.g. [3, 5] -> 5.
+    // e.g. [3, 5] -> 5.
+    let total_sum = match cumulative_sum.last() {
+        None => {
+            // All individuals are pefectly tied with 0 fitness.
+            let index = (random.random() * previous_generation.len() as f64) as usize;
+            return &previous_generation[index].details;
+        }
+        Some(total) => total.0,
+    };
     let p = (random.random() * total_sum as f64) as u32 + 1; // Random number from 1 to 5.
-    let r = cumulative_sum.binary_search(&p);
+    let r = cumulative_sum.binary_search_by(|s| s.0.cmp(&p));
     match r {
         Ok(index) => {
             // e.g. Search with 3, receive index 0.
-            &previous_generation[index].details
+            &cumulative_sum[index].1
         }
         Err(index) => {
             // e.g. Search with 2, receive index 0.
-            &previous_generation[index].details
+            &cumulative_sum[index].1
         }
     }
 }
@@ -176,6 +185,19 @@ fn crossover(p1: &Individual, p2: &Individual, random: &impl RandomProvider) -> 
     Individual {
         soldier_distribution,
     }
+}
+
+fn mutate(individual: &mut Individual, sorted_castles: &[usize], random: &impl RandomProvider) {
+    // Choose a random pair of neighboring castles to swap soldiers between.
+    let left_index = (random.random() * (sorted_castles.len() - 1) as f64) as usize;
+    let c1 = sorted_castles[left_index];
+    let c2 = sorted_castles[left_index + 1];
+    // Regenerate a uniformly random distribution for those two castles.
+    let total = individual.soldier_distribution[c1] + individual.soldier_distribution[c2];
+    let left = (random.random() * (total + 1) as f64) as u32;
+    let right = total - left;
+    individual.soldier_distribution[c1] = left;
+    individual.soldier_distribution[c2] = right;
 }
 
 fn evaluate(
