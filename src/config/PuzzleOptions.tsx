@@ -1,10 +1,14 @@
 import React from 'react';
 import { makeStyles } from '@material-ui/core/styles';
+import Select from '@material-ui/core/Select';
+import InputLabel from '@material-ui/core/InputLabel';
+import MenuItem from '@material-ui/core/MenuItem';
 
+import { Scoring } from '../App';
 import { MinConstraintInput } from './Inputs';
 
 const useStyles = makeStyles({
-  numberInput: {
+  input: {
     margin: '8px'
   },
   castlePointsInput: {
@@ -18,9 +22,11 @@ type PuzzleOptionsProps = {
   onCastlePointsChange: (castlePoints: number[]) => void,
   numSoldiers: number,
   onNumSoldiersChange: (numSoldiers: number) => void
+  scoring: Scoring,
+  onScoringChange: (scoring: Scoring) => void,
 }
 
-export function PuzzleOptions({ castlePoints, onCastlePointsChange, numSoldiers, onNumSoldiersChange }: PuzzleOptionsProps) {
+export function PuzzleOptions({ castlePoints, onCastlePointsChange, numSoldiers, onNumSoldiersChange, scoring, onScoringChange }: PuzzleOptionsProps) {
   const classes = useStyles();
 
   const handleNumCastlesChanged = (value: number) => {
@@ -38,10 +44,14 @@ export function PuzzleOptions({ castlePoints, onCastlePointsChange, numSoldiers,
     onCastlePointsChange(copy);
   }
 
+  const handleScoringChange = (event: React.ChangeEvent<{ value: unknown }>) => {
+    onScoringChange(event.target.value as Scoring);
+  };
+
   return <>
     <div>
       <MinConstraintInput
-        className={classes.numberInput}
+        className={classes.input}
         label="Number of soldiers"
         defaultValue={numSoldiers}
         onChange={onNumSoldiersChange}
@@ -50,7 +60,7 @@ export function PuzzleOptions({ castlePoints, onCastlePointsChange, numSoldiers,
     </div>
     <div>
       <MinConstraintInput
-        className={classes.numberInput}
+        className={classes.input}
         label="Number of castles"
         defaultValue={castlePoints.length}
         onChange={handleNumCastlesChanged}
@@ -64,5 +74,12 @@ export function PuzzleOptions({ castlePoints, onCastlePointsChange, numSoldiers,
       onChange={(value: number) => handleCastlePointChanged(value, i)}
       min={0}
     />)}
+    <div className={classes.input}>
+      <InputLabel shrink>Objective</InputLabel>
+      <Select value={scoring} onChange={handleScoringChange}>
+        <MenuItem value={Scoring.Wins}>Most wins</MenuItem>
+        <MenuItem value={Scoring.Points}>Most victory points</MenuItem>
+      </Select>
+    </div>
   </>;
 }

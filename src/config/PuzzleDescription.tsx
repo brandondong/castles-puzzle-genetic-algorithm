@@ -3,6 +3,8 @@ import { makeStyles } from '@material-ui/core/styles';
 import Typography from '@material-ui/core/Typography';
 import Divider from '@material-ui/core/Divider';
 
+import { Scoring } from '../App';
+
 const useStyles = makeStyles({
   spacing: {
     marginBottom: '32px'
@@ -16,6 +18,7 @@ type PuzzleDescriptionProps = {
   castlePoints: number[],
   numSoldiers: number,
   populationSize: number,
+  scoring: Scoring,
 }
 
 function formattedCastlePoints(castlePoints: number[]) {
@@ -27,7 +30,7 @@ function formattedCastlePoints(castlePoints: number[]) {
   return s;
 }
 
-export function PuzzleDescription({ castlePoints, numSoldiers, populationSize }: PuzzleDescriptionProps) {
+export function PuzzleDescription({ castlePoints, numSoldiers, populationSize, scoring }: PuzzleDescriptionProps) {
   const classes = useStyles();
 
   const numCastles = castlePoints.length;
@@ -38,11 +41,11 @@ export function PuzzleDescription({ castlePoints, numSoldiers, populationSize }:
     <Typography gutterBottom>{`You and your enemy each have ${numSoldiers} soldier${numSoldiers === 1 ? '' : 's'} to distribute, any way you like, to fight at any of the ${numCastles} castles. Whoever sends more soldiers to a given castle conquers that castle and wins its victory points. If you each send the same number of troops, no points are rewarded.`}</Typography>
     <Typography gutterBottom>You don’t know what distribution of forces your enemy has chosen until the battles begin.</Typography>
     <Typography gutterBottom>Whoever wins the most points wins the war.</Typography>
-    <Typography gutterBottom>{`Submit a plan distributing your ${numSoldiers} soldier${numSoldiers === 1 ? '' : 's'} among the ${numCastles} castles. One-on-one matchups will be played between all submitted strategies. Whoever wins the most wars wins the battle royale!`}</Typography>
+    <Typography gutterBottom>{`Submit a plan distributing your ${numSoldiers} soldier${numSoldiers === 1 ? '' : 's'} among the ${numCastles} castles. One-on-one matchups will be played between all submitted strategies. Whoever wins the most ${scoring === Scoring.Wins ? 'wars' : 'victory points in total'} wins the battle royale!`}</Typography>
     <Divider className={classes.spacing} />
     <Typography className={classes.spacing}><b>Genetic algorithm simulation:</b></Typography>
     <Typography gutterBottom>{`The above battle royale will be played out amongst ${populationSize} bots.`}</Typography>
-    <Typography gutterBottom>Selection, crossover, and mutation will be applied accordingly using the number of wars won as a fitness function.</Typography>
+    <Typography gutterBottom>{`Selection, crossover, and mutation will be applied accordingly using the number of ${scoring === Scoring.Wins ? 'wars won' : 'victory points'} as a fitness function.`}</Typography>
     <Typography>Visualizations will track how the population evolves over time.</Typography>
   </>;
 }

@@ -6,6 +6,7 @@ import Slider from '@material-ui/core/Slider';
 import { WasmGeneticAlgorithm } from "wasm";
 
 import { GAActionsRow } from './GAActionsRow';
+import { Scoring } from '../App';
 
 const wasm = import("wasm");
 
@@ -22,9 +23,10 @@ type GAVisualizerProps = {
   castlePoints: number[],
   numSoldiers: number,
   populationSize: number,
+  scoring: Scoring,
 }
 
-export function GAVisualizer({ numSoldiers, castlePoints, populationSize }: GAVisualizerProps) {
+export function GAVisualizer({ numSoldiers, castlePoints, populationSize, scoring }: GAVisualizerProps) {
   const classes = useStyles();
   const [algorithm, setAlgorithm] = useState<WasmGeneticAlgorithm | undefined>(undefined);
 
@@ -38,7 +40,7 @@ export function GAVisualizer({ numSoldiers, castlePoints, populationSize }: GAVi
   const handleStep = () => {
     if (algorithm === undefined) {
       wasm.then(wasm => {
-        const algorithm = wasm.WasmGeneticAlgorithm.new(populationSize, Uint32Array.from(castlePoints), numSoldiers, wasm.Scoring.Points);
+        const algorithm = wasm.WasmGeneticAlgorithm.new(populationSize, Uint32Array.from(castlePoints), numSoldiers, scoring);
         alert(algorithm.run_generation());
         setAlgorithm(algorithm);
       });

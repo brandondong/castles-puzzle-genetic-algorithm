@@ -19,11 +19,18 @@ const useStyles = makeStyles({
   }
 });
 
+// Must match wasm definition.
+export enum Scoring {
+  Wins = 0,
+  Points = 1,
+}
+
 function App() {
   const classes = useStyles();
   const [numSoldiers, setNumSoldiers] = useState(100);
   const [castlePoints, setCastlePoints] = useState(Array.from(Array(10).keys()).map(x => x + 1));
   const [populationSize, setPopulationSize] = useState(100);
+  const [scoring, setScoring] = useState(Scoring.Wins);
 
   return (
     <div className={classes.root}>
@@ -35,6 +42,7 @@ function App() {
               castlePoints={castlePoints}
               numSoldiers={numSoldiers}
               populationSize={populationSize}
+              scoring={scoring}
             />
           </ExpandCollapsePanel>
           <ExpandCollapsePanel defaultExpanded={false} header="Puzzle Options">
@@ -43,6 +51,8 @@ function App() {
               onCastlePointsChange={setCastlePoints}
               numSoldiers={numSoldiers}
               onNumSoldiersChange={setNumSoldiers}
+              scoring={scoring}
+              onScoringChange={setScoring}
             />
           </ExpandCollapsePanel>
           <ExpandCollapsePanel defaultExpanded={false} header="Genetic Algorithm Options">
@@ -57,6 +67,7 @@ function App() {
             castlePoints={castlePoints}
             numSoldiers={numSoldiers}
             populationSize={populationSize}
+            scoring={scoring}
           />
         </Grid>
       </Grid>
