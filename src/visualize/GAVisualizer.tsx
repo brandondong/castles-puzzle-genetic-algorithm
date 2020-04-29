@@ -20,10 +20,11 @@ const useStyles = makeStyles({
 
 type GAVisualizerProps = {
   castlePoints: number[],
-  numSoldiers: number
+  numSoldiers: number,
+  populationSize: number,
 }
 
-export function GAVisualizer({ numSoldiers, castlePoints }: GAVisualizerProps) {
+export function GAVisualizer({ numSoldiers, castlePoints, populationSize }: GAVisualizerProps) {
   const classes = useStyles();
   const [algorithm, setAlgorithm] = useState<WasmGeneticAlgorithm | undefined>(undefined);
 
@@ -37,7 +38,7 @@ export function GAVisualizer({ numSoldiers, castlePoints }: GAVisualizerProps) {
   const handleStep = () => {
     if (algorithm === undefined) {
       wasm.then(wasm => {
-        const algorithm = wasm.WasmGeneticAlgorithm.new(2, Uint32Array.from(castlePoints), numSoldiers, wasm.Scoring.Points);
+        const algorithm = wasm.WasmGeneticAlgorithm.new(populationSize, Uint32Array.from(castlePoints), numSoldiers, wasm.Scoring.Points);
         alert(algorithm.run_generation());
         setAlgorithm(algorithm);
       });

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { makeStyles } from '@material-ui/core/styles';
-import TextField from '@material-ui/core/TextField';
+
+import { MinConstraintInput } from './Inputs';
 
 const useStyles = makeStyles({
   numberInput: {
@@ -64,37 +65,4 @@ export function PuzzleOptions({ castlePoints, onCastlePointsChange, numSoldiers,
       min={0}
     />)}
   </>;
-}
-
-type MinConstraintInputProps = {
-  min: number,
-  onChange: (value: number) => void,
-  // Manually add pass through props because TextField props type prevents us from extending the type directly.
-  className?: string,
-  label: string,
-  defaultValue: number
-}
-
-function MinConstraintInput(props: MinConstraintInputProps) {
-  const [error, setError] = useState(false);
-
-  const { min, onChange, ...rest } = props;
-
-  const handleChanged = (e: any) => {
-    const value = parseInt(e.target.value);
-    if (!isNaN(value) && value >= min) {
-      onChange(value);
-      setError(false);
-    } else {
-      setError(true);
-    }
-  }
-  return <TextField
-    type="number"
-    onChange={handleChanged}
-    error={error}
-    InputLabelProps={{
-      shrink: true,
-    }}
-    {...rest} />;
 }

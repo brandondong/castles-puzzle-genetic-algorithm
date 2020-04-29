@@ -5,8 +5,8 @@ use crate::Scoring;
 
 pub(crate) struct GeneticAlgorithm<R: RandomProvider> {
     current_generation: Option<Vec<IndividualResult>>,
-    num_individuals: u32,
-    castle_points: Vec<u32>,
+    pub num_individuals: u32,
+    pub castle_points: Vec<u32>,
     num_soldiers: u32,
     scoring: Scoring,
     random: R,

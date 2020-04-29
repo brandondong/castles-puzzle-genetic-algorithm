@@ -45,6 +45,14 @@ impl WasmGeneticAlgorithm {
     pub fn run_generation(&mut self) -> Vec<u32> {
         flatten_for_wasm(self.algorithm.run_generation())
     }
+
+    pub fn num_individuals(&self) -> u32 {
+        self.algorithm.num_individuals
+    }
+
+    pub fn num_castles(&self) -> usize {
+        self.algorithm.castle_points.len()
+    }
 }
 
 fn flatten_for_wasm(results: &[IndividualResult]) -> Vec<u32> {

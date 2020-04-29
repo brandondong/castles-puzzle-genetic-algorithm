@@ -14,7 +14,8 @@ const useStyles = makeStyles({
 
 type PuzzleDescriptionProps = {
   castlePoints: number[],
-  numSoldiers: number
+  numSoldiers: number,
+  populationSize: number,
 }
 
 function formattedCastlePoints(castlePoints: number[]) {
@@ -26,7 +27,7 @@ function formattedCastlePoints(castlePoints: number[]) {
   return s;
 }
 
-export function PuzzleDescription({ castlePoints, numSoldiers }: PuzzleDescriptionProps) {
+export function PuzzleDescription({ castlePoints, numSoldiers, populationSize }: PuzzleDescriptionProps) {
   const classes = useStyles();
 
   const numCastles = castlePoints.length;
@@ -40,7 +41,7 @@ export function PuzzleDescription({ castlePoints, numSoldiers }: PuzzleDescripti
     <Typography gutterBottom>{`Submit a plan distributing your ${numSoldiers} soldier${numSoldiers === 1 ? '' : 's'} among the ${numCastles} castles. One-on-one matchups will be played between all submitted strategies. Whoever wins the most wars wins the battle royale!`}</Typography>
     <Divider className={classes.spacing} />
     <Typography className={classes.spacing}><b>Genetic algorithm simulation:</b></Typography>
-    <Typography gutterBottom>The above battle royale will be played out amongst 100 bots.</Typography>
+    <Typography gutterBottom>{`The above battle royale will be played out amongst ${populationSize} bots.`}</Typography>
     <Typography gutterBottom>Selection, crossover, and mutation will be applied accordingly using the number of wars won as a fitness function.</Typography>
     <Typography>Visualizations will track how the population evolves over time.</Typography>
   </>;

@@ -6,6 +6,7 @@ import Typography from '@material-ui/core/Typography';
 import { ExpandCollapsePanel } from './config/ExpandCollapsePanel';
 import { PuzzleDescription } from './config/PuzzleDescription';
 import { PuzzleOptions } from './config/PuzzleOptions';
+import { GAOptions } from './config/GAOptions';
 import { GAVisualizer } from './visualize/GAVisualizer';
 
 const useStyles = makeStyles({
@@ -22,6 +23,7 @@ function App() {
   const classes = useStyles();
   const [numSoldiers, setNumSoldiers] = useState(100);
   const [castlePoints, setCastlePoints] = useState(Array.from(Array(10).keys()).map(x => x + 1));
+  const [populationSize, setPopulationSize] = useState(100);
 
   return (
     <div className={classes.root}>
@@ -29,7 +31,11 @@ function App() {
       <Grid container spacing={4}>
         <Grid item xs={4}>
           <ExpandCollapsePanel defaultExpanded={true} header="Overview">
-            <PuzzleDescription castlePoints={castlePoints} numSoldiers={numSoldiers} />
+            <PuzzleDescription
+              castlePoints={castlePoints}
+              numSoldiers={numSoldiers}
+              populationSize={populationSize}
+            />
           </ExpandCollapsePanel>
           <ExpandCollapsePanel defaultExpanded={false} header="Puzzle Options">
             <PuzzleOptions
@@ -39,10 +45,19 @@ function App() {
               onNumSoldiersChange={setNumSoldiers}
             />
           </ExpandCollapsePanel>
-          <ExpandCollapsePanel defaultExpanded={false} header="Genetic Algorithm Options">WIP</ExpandCollapsePanel>
+          <ExpandCollapsePanel defaultExpanded={false} header="Genetic Algorithm Options">
+            <GAOptions
+              populationSize={populationSize}
+              onPopulationSizeChange={setPopulationSize}
+            />
+          </ExpandCollapsePanel>
         </Grid>
         <Grid item xs={8}>
-          <GAVisualizer castlePoints={castlePoints} numSoldiers={numSoldiers} />
+          <GAVisualizer
+            castlePoints={castlePoints}
+            numSoldiers={numSoldiers}
+            populationSize={populationSize}
+          />
         </Grid>
       </Grid>
     </div>
