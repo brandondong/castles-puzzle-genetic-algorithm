@@ -1,14 +1,22 @@
 import React, { useState } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
-import Grid from '@material-ui/core/Grid';
 import Typography from '@material-ui/core/Typography';
 import Slider from '@material-ui/core/Slider';
 
 import { GenerationResult } from './GenerationResult';
+import { ScoreHistogram } from './ScoreHistogram';
 
 const useStyles = makeStyles({
   slider: {
     width: '150px'
+  },
+  scoreContainer: {
+    flexGrow: 1,
+    height: '300px',
+    overflow: 'auto'
+  },
+  scoreRow: {
+    display: 'flex'
   }
 });
 
@@ -26,7 +34,10 @@ export function GAResults({ result }: GAResultsProps) {
   };
 
   return <>
-    <Grid container justify="flex-end">
+    <div className={classes.scoreRow}>
+      <div className={classes.scoreContainer}>
+        <ScoreHistogram />
+      </div>
       <div>
         <Typography gutterBottom>Highlight best N:</Typography>
         <Slider
@@ -39,6 +50,6 @@ export function GAResults({ result }: GAResultsProps) {
           max={populationSize}
         />
       </div>
-    </Grid>
+    </div>
   </>;
 }
