@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import Grid from '@material-ui/core/Grid';
-import Typography from '@material-ui/core/Typography';
-import Slider from '@material-ui/core/Slider';
 import { WasmGeneticAlgorithm } from "wasm";
 
 import { GAActionsRow } from './GAActionsRow';
 import { Scoring } from '../App';
+import { GenerationResult } from './GenerationResult';
+import { GAResults } from './GAResults';
 
 const wasm = import("wasm");
 
@@ -29,23 +29,27 @@ type GAVisualizerProps = {
 export function GAVisualizer({ numSoldiers, castlePoints, populationSize, scoring }: GAVisualizerProps) {
   const classes = useStyles();
   const [algorithm, setAlgorithm] = useState<WasmGeneticAlgorithm | undefined>(undefined);
+  const [result, setResult] = useState<GenerationResult | undefined>(undefined);
 
   const handleReset = () => {
     if (algorithm !== undefined) {
       algorithm.free();
     }
     setAlgorithm(undefined);
+    setResult(undefined);
   }
 
   const handleStep = () => {
     if (algorithm === undefined) {
       wasm.then(wasm => {
         const algorithm = wasm.WasmGeneticAlgorithm.new(populationSize, Uint32Array.from(castlePoints), numSoldiers, scoring);
-        alert(algorithm.run_generation());
         setAlgorithm(algorithm);
+        const result = runGeneration(algorithm);
+        setResult(result);
       });
     } else {
-      alert(algorithm.run_generation());
+      const result = runGeneration(algorithm);
+      setResult(result);
     }
   }
 
@@ -56,21 +60,14 @@ export function GAVisualizer({ numSoldiers, castlePoints, populationSize, scorin
         onStep={handleStep}
       />
     </Grid>
-    {algorithm !== undefined &&
-      <>
-        <Grid className={classes.results} container justify="flex-end">
-          <div>
-            <Typography gutterBottom>Highlight best N:</Typography>
-            <Slider
-              className={classes.slider}
-              defaultValue={30}
-              valueLabelDisplay="auto"
-              step={1}
-              min={1}
-              max={100}
-            />
-          </div>
-        </Grid>
-      </>}
+    {result !== undefined &&
+      <div className={classes.results}>
+        <GAResults result={result} />
+      </div>}
   </>;
+}
+
+function runGeneration(algorithm: WasmGeneticAlgorithm) {
+  const result = algorithm.run_generation();
+  return new GenerationResult(result, algorithm.num_individuals());
 }
