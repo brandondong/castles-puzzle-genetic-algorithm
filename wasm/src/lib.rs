@@ -53,6 +53,10 @@ impl WasmGeneticAlgorithm {
     pub fn num_castles(&self) -> usize {
         self.algorithm.castle_points.len()
     }
+
+    pub fn scoring(&self) -> Scoring {
+        self.algorithm.scoring
+    }
 }
 
 fn flatten_for_wasm(results: &[IndividualResult]) -> Vec<u32> {
@@ -67,6 +71,7 @@ fn flatten_for_wasm(results: &[IndividualResult]) -> Vec<u32> {
 }
 
 #[wasm_bindgen]
+#[derive(Clone, Copy)]
 pub enum Scoring {
     Wins = 0,
     Points = 1,

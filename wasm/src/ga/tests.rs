@@ -158,7 +158,7 @@ fn test_evaluate_individuals_wars_won() {
         },
     ];
     let castle_points = vec![5, 10];
-    let results = evaluate(individuals, &castle_points, &Scoring::Wins);
+    let results = evaluate(individuals, &castle_points, Scoring::Wins);
     assert_eq!(
         results,
         vec![
@@ -198,7 +198,7 @@ fn test_evaluate_individuals_points() {
         },
     ];
     let castle_points = vec![5, 10];
-    let results = evaluate(individuals, &castle_points, &Scoring::Points);
+    let results = evaluate(individuals, &castle_points, Scoring::Points);
     assert_eq!(
         results,
         vec![

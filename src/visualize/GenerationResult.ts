@@ -1,10 +1,11 @@
+import { Scoring } from '../App';
+
 export class GenerationResult {
   populationSize: number;
-  constructor(data: Uint32Array, populationSize: number) {
-    this.populationSize = populationSize;
-  }
+  scoring: Scoring;
 
-  numIndividuals() {
-    return this.populationSize;
+  constructor(data: Uint32Array, populationSize: number, scoring: Scoring) {
+    this.populationSize = populationSize;
+    this.scoring = scoring;
   }
 }

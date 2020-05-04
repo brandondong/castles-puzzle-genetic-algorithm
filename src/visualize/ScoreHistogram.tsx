@@ -1,9 +1,12 @@
 import React from 'react';
 import { ResponsiveBar } from '@nivo/bar';
 
+import { Scoring } from '../App';
+import { GenerationResult } from './GenerationResult';
+
 const data = [
   {
-    "country": "AD",
+    "country": "1",
     "hot dog": 85,
     "burger": 54,
     "sandwich": 76,
@@ -16,7 +19,7 @@ const data = [
     "donutColor": "hsl(228, 70%, 50%)"
   },
   {
-    "country": "AE",
+    "country": "2",
     "hot dog": 188,
     "hot dogColor": "hsl(143, 70%, 50%)",
     "burger": 50,
@@ -31,7 +34,7 @@ const data = [
     "donutColor": "hsl(294, 70%, 50%)"
   },
   {
-    "country": "AF",
+    "country": "3",
     "hot dog": 68,
     "hot dogColor": "hsl(342, 70%, 50%)",
     "burger": 60,
@@ -46,7 +49,7 @@ const data = [
     "donutColor": "hsl(179, 70%, 50%)"
   },
   {
-    "country": "AG",
+    "country": "4",
     "hot dog": 42,
     "hot dogColor": "hsl(216, 70%, 50%)",
     "burger": 69,
@@ -61,7 +64,7 @@ const data = [
     "donutColor": "hsl(193, 70%, 50%)"
   },
   {
-    "country": "AI",
+    "country": "5",
     "hot dog": 92,
     "hot dogColor": "hsl(53, 70%, 50%)",
     "burger": 127,
@@ -76,7 +79,7 @@ const data = [
     "donutColor": "hsl(258, 70%, 50%)"
   },
   {
-    "country": "AL",
+    "country": "6",
     "hot dog": 110,
     "hot dogColor": "hsl(279, 70%, 50%)",
     "burger": 154,
@@ -91,7 +94,7 @@ const data = [
     "donutColor": "hsl(161, 70%, 50%)"
   },
   {
-    "country": "AM",
+    "country": "7",
     "hot dog": 97,
     "hot dogColor": "hsl(304, 70%, 50%)",
     "burger": 164,
@@ -107,7 +110,11 @@ const data = [
   }
 ];
 
-export function ScoreHistogram() {
+type ScoreHistogramProps = {
+  result: GenerationResult
+}
+
+export function ScoreHistogram({ result }: ScoreHistogramProps) {
   return <ResponsiveBar
     data={data}
     keys={['hot dog', 'burger']}
@@ -117,7 +124,7 @@ export function ScoreHistogram() {
       tickSize: 5,
       tickPadding: 5,
       tickRotation: 0,
-      legend: 'country',
+      legend: result.scoring === Scoring.Wins ? 'Wars won' : 'Victory points achieved',
       legendPosition: 'middle',
       legendOffset: 32
     }}
@@ -125,7 +132,7 @@ export function ScoreHistogram() {
       tickSize: 5,
       tickPadding: 5,
       tickRotation: 0,
-      legend: 'food',
+      legend: 'Frequency',
       legendPosition: 'middle',
       legendOffset: -40
     }}

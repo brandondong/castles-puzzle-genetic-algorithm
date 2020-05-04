@@ -8,7 +8,7 @@ pub(crate) struct GeneticAlgorithm<R: RandomProvider> {
     pub num_individuals: u32,
     pub castle_points: Vec<u32>,
     num_soldiers: u32,
-    scoring: Scoring,
+    pub scoring: Scoring,
     random: R,
 }
 
@@ -52,7 +52,7 @@ impl<R: RandomProvider> GeneticAlgorithm<R> {
         };
 
         // Evaluate scores for each individual.
-        let generation_results = evaluate(generation, &self.castle_points, &self.scoring);
+        let generation_results = evaluate(generation, &self.castle_points, self.scoring);
         // Remember results for the next round.
         self.current_generation = Some(generation_results);
 
@@ -203,7 +203,7 @@ fn mutate(individual: &mut Individual, sorted_castles: &[usize], random: &impl R
 fn evaluate(
     individuals: Vec<Individual>,
     castle_points: &[u32],
-    scoring: &Scoring,
+    scoring: Scoring,
 ) -> Vec<IndividualResult> {
     let mut scores = vec![0; individuals.len()];
     // Evaluate every pair.

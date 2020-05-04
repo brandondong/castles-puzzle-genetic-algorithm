@@ -26,7 +26,7 @@ type GAResultsProps = {
 
 export function GAResults({ result }: GAResultsProps) {
   const classes = useStyles();
-  const populationSize = result.numIndividuals();
+  const populationSize = result.populationSize;
   const [bestN, setBestN] = useState(Math.ceil(populationSize / 4));
 
   const handleBestNChange = (event: any, newValue: number | number[]) => {
@@ -36,7 +36,7 @@ export function GAResults({ result }: GAResultsProps) {
   return <>
     <div className={classes.scoreRow}>
       <div className={classes.scoreContainer}>
-        <ScoreHistogram />
+        <ScoreHistogram result={result} />
       </div>
       <div>
         <Typography gutterBottom>Highlight best N:</Typography>
