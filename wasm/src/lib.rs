@@ -3,8 +3,6 @@ mod utils;
 
 use ga::GeneticAlgorithm;
 use ga::IndividualResult;
-use ga::RandomProvider;
-use js_sys::Math;
 use wasm_bindgen::prelude::*;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
@@ -15,7 +13,7 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[wasm_bindgen]
 pub struct WasmGeneticAlgorithm {
-    algorithm: GeneticAlgorithm<WasmRandomProvider>,
+    algorithm: GeneticAlgorithm,
 }
 
 #[wasm_bindgen]
@@ -28,13 +26,7 @@ impl WasmGeneticAlgorithm {
     ) -> WasmGeneticAlgorithm {
         utils::set_panic_hook();
         WasmGeneticAlgorithm {
-            algorithm: GeneticAlgorithm::new(
-                num_individuals,
-                castle_points,
-                num_soldiers,
-                scoring,
-                WasmRandomProvider,
-            ),
+            algorithm: GeneticAlgorithm::new(num_individuals, castle_points, num_soldiers, scoring),
         }
     }
 
@@ -75,14 +67,6 @@ fn flatten_for_wasm(results: &[IndividualResult]) -> Vec<u32> {
 pub enum Scoring {
     Wins = 0,
     Points = 1,
-}
-
-struct WasmRandomProvider;
-
-impl RandomProvider for WasmRandomProvider {
-    fn random(&self) -> f64 {
-        Math::random()
-    }
 }
 
 #[cfg(test)]

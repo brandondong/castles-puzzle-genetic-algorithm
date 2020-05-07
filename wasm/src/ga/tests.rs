@@ -1,17 +1,8 @@
 use super::*;
-use rand;
-
-struct TestRandom;
-
-impl RandomProvider for TestRandom {
-    fn random(&self) -> f64 {
-        rand::random()
-    }
-}
 
 #[test]
 fn test_end_to_end() {
-    let mut ga = GeneticAlgorithm::new(5, vec![1, 2, 3], 10, Scoring::Wins, TestRandom);
+    let mut ga = GeneticAlgorithm::new(5, vec![1, 2, 3], 10, Scoring::Wins);
     for _ in 0..10 {
         let results = ga.run_generation();
         assert_eq!(results.len(), 5);
@@ -26,7 +17,7 @@ fn test_end_to_end() {
 fn test_generate_random_individuals() {
     for num_soldiers in 1..10 {
         for num_castles in 3..10 {
-            let individual = uniform_random_individual(num_castles, num_soldiers, &TestRandom);
+            let individual = uniform_random_individual(num_castles, num_soldiers);
             let total_soldiers: u32 = individual.soldier_distribution.iter().sum();
             assert_eq!(total_soldiers, num_soldiers);
         }
@@ -62,7 +53,7 @@ fn test_roulette_select() {
     ];
     for _ in 0..10 {
         // Can't really assert any properties, just ensure no panic.
-        roulette_select(&prev_results, &cumulative_sum, &TestRandom);
+        roulette_select(&prev_results, &cumulative_sum);
     }
 }
 
@@ -82,7 +73,7 @@ fn test_roulette_select_all_zero() {
             score: 0,
         },
     ];
-    roulette_select(&prev_results, &Vec::new(), &TestRandom);
+    roulette_select(&prev_results, &Vec::new());
 }
 
 #[test]
@@ -93,7 +84,7 @@ fn test_cross_over_no_rounding() {
     let i2 = Individual {
         soldier_distribution: vec![2, 0, 2],
     };
-    let child = crossover(&i1, &i2, &TestRandom);
+    let child = crossover(&i1, &i2);
     assert_eq!(child.soldier_distribution, vec![2, 1, 1]);
 }
 
@@ -106,7 +97,7 @@ fn test_cross_over_rounding() {
         let i2 = Individual {
             soldier_distribution: vec![2, 0, 3],
         };
-        let s = crossover(&i1, &i2, &TestRandom).soldier_distribution;
+        let s = crossover(&i1, &i2).soldier_distribution;
         assert_eq!(s[0], 2);
         assert!(s[1] == 1 && s[2] == 2 || s[1] == 2 && s[2] == 1);
     }
@@ -120,7 +111,7 @@ fn test_mutate() {
         let mut i = Individual {
             soldier_distribution: vec![3, 3, 3],
         };
-        mutate(&mut i, &sorted_castles, &TestRandom);
+        mutate(&mut i, &sorted_castles);
         let soldiers = i.soldier_distribution;
         let total_soldiers: u32 = soldiers.iter().sum();
         assert_eq!(total_soldiers, 9);

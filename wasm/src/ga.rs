@@ -2,31 +2,29 @@
 mod tests;
 
 use crate::Scoring;
+use rand::random;
 
-pub(crate) struct GeneticAlgorithm<R: RandomProvider> {
+pub(crate) struct GeneticAlgorithm {
     current_generation: Option<Vec<IndividualResult>>,
     pub num_individuals: u32,
     pub castle_points: Vec<u32>,
     num_soldiers: u32,
     pub scoring: Scoring,
-    random: R,
 }
 
-impl<R: RandomProvider> GeneticAlgorithm<R> {
+impl GeneticAlgorithm {
     pub fn new(
         num_individuals: u32,
         castle_points: Vec<u32>,
         num_soldiers: u32,
         scoring: Scoring,
-        random: R,
-    ) -> GeneticAlgorithm<R> {
+    ) -> GeneticAlgorithm {
         GeneticAlgorithm {
             current_generation: None,
             num_individuals,
             castle_points,
             num_soldiers,
             scoring,
-            random,
         }
     }
 
@@ -36,13 +34,7 @@ impl<R: RandomProvider> GeneticAlgorithm<R> {
             None => {
                 // First generation.
                 (0..self.num_individuals)
-                    .map(|_| {
-                        uniform_random_individual(
-                            self.castle_points.len(),
-                            self.num_soldiers,
-                            &self.random,
-                        )
-                    })
+                    .map(|_| uniform_random_individual(self.castle_points.len(), self.num_soldiers))
                     .collect()
             }
             Some(previous_generation) => {
@@ -78,23 +70,19 @@ impl<R: RandomProvider> GeneticAlgorithm<R> {
         (0..self.num_individuals)
             .map(|_| {
                 // Roulette wheel selection for both parents.
-                let p1 = roulette_select(previous_generation, &cumulative_sum, &self.random);
-                let p2 = roulette_select(previous_generation, &cumulative_sum, &self.random);
+                let p1 = roulette_select(previous_generation, &cumulative_sum);
+                let p2 = roulette_select(previous_generation, &cumulative_sum);
                 // Crossover.
-                let mut child = crossover(p1, p2, &self.random);
+                let mut child = crossover(p1, p2);
                 // Mutation.
-                mutate(&mut child, &sorted_castles, &self.random);
+                mutate(&mut child, &sorted_castles);
                 child
             })
             .collect()
     }
 }
 
-fn uniform_random_individual(
-    num_castles: usize,
-    num_soldiers: u32,
-    random: &impl RandomProvider,
-) -> Individual {
+fn uniform_random_individual(num_castles: usize, num_soldiers: u32) -> Individual {
     let mut soldier_distribution = Vec::with_capacity(num_castles);
     // Pick a partitioning of soldiers with uniform probability (i.e. [1, 1, 1] is equally likely as [3, 0, 0]).
     // See https://en.wikipedia.org/wiki/Stars_and_bars_%28combinatorics%29.
@@ -110,7 +98,7 @@ fn uniform_random_individual(
         }
         let remaining = total - i;
         let needed = choose - chosen;
-        if random.random() < needed as f64 / remaining as f64 {
+        if random::<f64>() < needed as f64 / remaining as f64 {
             let current_index = i as i32;
             let num_soldiers = (current_index - prev_index - 1) as u32;
             soldier_distribution.push(num_soldiers);
@@ -129,18 +117,17 @@ fn uniform_random_individual(
 fn roulette_select<'a>(
     previous_generation: &'a [IndividualResult],
     cumulative_sum: &'a [(u32, &Individual)],
-    random: &impl RandomProvider,
 ) -> &'a Individual {
     // e.g. [3, 5] -> 5.
     let total_sum = match cumulative_sum.last() {
         None => {
             // All individuals are pefectly tied with 0 fitness.
-            let index = (random.random() * previous_generation.len() as f64) as usize;
+            let index = (random::<f64>() * previous_generation.len() as f64) as usize;
             return &previous_generation[index].details;
         }
         Some(total) => total.0,
     };
-    let p = (random.random() * total_sum as f64) as u32 + 1; // Random number from 1 to 5.
+    let p = (random::<f64>() * total_sum as f64) as u32 + 1; // Random number from 1 to 5.
     let r = cumulative_sum.binary_search_by(|s| s.0.cmp(&p));
     match r {
         Ok(index) => {
@@ -154,7 +141,7 @@ fn roulette_select<'a>(
     }
 }
 
-fn crossover(p1: &Individual, p2: &Individual, random: &impl RandomProvider) -> Individual {
+fn crossover(p1: &Individual, p2: &Individual) -> Individual {
     let mut rounded_down = Vec::new();
     let mut soldier_distribution = Vec::with_capacity(p1.soldier_distribution.len());
     // Average the soldiers sent for each castle.
@@ -176,7 +163,7 @@ fn crossover(p1: &Individual, p2: &Individual, random: &impl RandomProvider) -> 
         }
         let remaining = total - i;
         let needed = choose - chosen;
-        if random.random() < needed as f64 / remaining as f64 {
+        if random::<f64>() < needed as f64 / remaining as f64 {
             let index = rounded_down[i];
             soldier_distribution[index] += 1;
             chosen += 1;
@@ -187,14 +174,14 @@ fn crossover(p1: &Individual, p2: &Individual, random: &impl RandomProvider) -> 
     }
 }
 
-fn mutate(individual: &mut Individual, sorted_castles: &[usize], random: &impl RandomProvider) {
+fn mutate(individual: &mut Individual, sorted_castles: &[usize]) {
     // Choose a random pair of neighboring castles to swap soldiers between.
-    let left_index = (random.random() * (sorted_castles.len() - 1) as f64) as usize;
+    let left_index = (random::<f64>() * (sorted_castles.len() - 1) as f64) as usize;
     let c1 = sorted_castles[left_index];
     let c2 = sorted_castles[left_index + 1];
     // Regenerate a uniformly random distribution for those two castles.
     let total = individual.soldier_distribution[c1] + individual.soldier_distribution[c2];
-    let left = (random.random() * (total + 1) as f64) as u32;
+    let left = (random::<f64>() * (total + 1) as f64) as u32;
     let right = total - left;
     individual.soldier_distribution[c1] = left;
     individual.soldier_distribution[c2] = right;
@@ -238,10 +225,6 @@ fn evaluate(
     // Sort better scoring individuals first.
     results.sort_by(|a, b| b.score.cmp(&a.score));
     results
-}
-
-pub(crate) trait RandomProvider {
-    fn random(&self) -> f64;
 }
 
 #[derive(Debug, PartialEq)]
