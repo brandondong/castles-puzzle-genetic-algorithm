@@ -46,9 +46,8 @@ impl GeneticAlgorithm {
         // Evaluate scores for each individual.
         let generation_results = evaluate(generation, &self.castle_points, self.scoring);
         // Remember results for the next round.
-        self.current_generation = Some(generation_results);
-
-        self.current_generation.as_ref().unwrap()
+        self.current_generation = None;
+        self.current_generation.get_or_insert(generation_results)
     }
 
     fn generation_from_previous(
@@ -145,8 +144,13 @@ fn crossover(p1: &Individual, p2: &Individual) -> Individual {
     let mut rounded_down = Vec::new();
     let mut soldier_distribution = Vec::with_capacity(p1.soldier_distribution.len());
     // Average the soldiers sent for each castle.
-    for i in 0..p1.soldier_distribution.len() {
-        let total = p1.soldier_distribution[i] + p2.soldier_distribution[i];
+    for (i, total) in p1
+        .soldier_distribution
+        .iter()
+        .zip(&p2.soldier_distribution)
+        .map(|(s1, s2)| s1 + s2)
+        .enumerate()
+    {
         soldier_distribution.push(total / 2);
         if total % 2 != 0 {
             rounded_down.push(i);
@@ -157,15 +161,14 @@ fn crossover(p1: &Individual, p2: &Individual) -> Individual {
     let choose = total / 2;
     // Knuth's algorithm:
     let mut chosen = 0;
-    for i in 0..total {
+    for (i, castle_index) in rounded_down.into_iter().enumerate() {
         if chosen >= choose {
             break;
         }
         let remaining = total - i;
         let needed = choose - chosen;
         if random::<f64>() < needed as f64 / remaining as f64 {
-            let index = rounded_down[i];
-            soldier_distribution[index] += 1;
+            soldier_distribution[castle_index] += 1;
             chosen += 1;
         }
     }
@@ -216,10 +219,10 @@ fn evaluate(
     }
     let mut results: Vec<IndividualResult> = individuals
         .into_iter()
-        .enumerate()
-        .map(|(i, individual)| IndividualResult {
+        .zip(scores)
+        .map(|(individual, score)| IndividualResult {
             details: individual,
-            score: scores[i],
+            score,
         })
         .collect();
     // Sort better scoring individuals first.
@@ -242,10 +245,12 @@ impl Individual {
     fn battle(&self, other: &Individual, castle_points: &[u32]) -> (u32, u32) {
         let mut score = 0;
         let mut o_score = 0;
-        for i in 0..castle_points.len() {
-            let soldiers = self.soldier_distribution[i];
-            let o_soldiers = other.soldier_distribution[i];
-            let points = castle_points[i];
+        for ((soldiers, o_soldiers), points) in self
+            .soldier_distribution
+            .iter()
+            .zip(&other.soldier_distribution)
+            .zip(castle_points)
+        {
             if soldiers > o_soldiers {
                 score += points;
             } else if soldiers < o_soldiers {

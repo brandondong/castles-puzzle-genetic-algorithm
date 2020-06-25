@@ -12,8 +12,6 @@ const useStyles = makeStyles({
   },
   scoreContainer: {
     flexGrow: 1,
-    height: '300px',
-    overflow: 'auto'
   },
   scoreRow: {
     display: 'flex'
