@@ -3,6 +3,7 @@ mod tests;
 
 use crate::Scoring;
 use rand::random;
+use std::cmp::Ordering;
 
 pub(crate) struct GeneticAlgorithm {
     current_generation: Option<Vec<IndividualResult>>,
@@ -18,8 +19,8 @@ impl GeneticAlgorithm {
         castle_points: Vec<u32>,
         num_soldiers: u32,
         scoring: Scoring,
-    ) -> GeneticAlgorithm {
-        GeneticAlgorithm {
+    ) -> Self {
+        Self {
             current_generation: None,
             num_individuals,
             castle_points,
@@ -203,13 +204,11 @@ fn evaluate(
             let i2 = &individuals[j];
             let (s1, s2) = i1.battle(i2, castle_points);
             match scoring {
-                Scoring::Wins => {
-                    if s1 > s2 {
-                        scores[i] += 1;
-                    } else if s1 < s2 {
-                        scores[j] += 1;
-                    }
-                }
+                Scoring::Wins => match s1.cmp(&s2) {
+                    Ordering::Greater => scores[i] += 1,
+                    Ordering::Less => scores[j] += 1,
+                    Ordering::Equal => (),
+                },
                 Scoring::Points => {
                     scores[i] += s1;
                     scores[j] += s2;
@@ -251,10 +250,10 @@ impl Individual {
             .zip(&other.soldier_distribution)
             .zip(castle_points)
         {
-            if soldiers > o_soldiers {
-                score += points;
-            } else if soldiers < o_soldiers {
-                o_score += points;
+            match soldiers.cmp(&o_soldiers) {
+                Ordering::Greater => score += points,
+                Ordering::Less => o_score += points,
+                Ordering::Equal => (),
             }
         }
         (score, o_score)

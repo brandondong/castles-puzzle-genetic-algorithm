@@ -23,17 +23,14 @@ impl WasmGeneticAlgorithm {
         castle_points: Vec<u32>,
         num_soldiers: u32,
         scoring: Scoring,
-    ) -> WasmGeneticAlgorithm {
+    ) -> Self {
         utils::set_panic_hook();
-        WasmGeneticAlgorithm {
+        Self {
             algorithm: GeneticAlgorithm::new(num_individuals, castle_points, num_soldiers, scoring),
         }
     }
 
-    /// Runs the next generation, returning details about the individuals and their scores achieved.
-    ///
-    /// Results are flattened in order to be passed back out of wasm.
-    /// The format is [individual 1 castle 1 soldiers, i1c2, ..., i1 score, i2c1, ...].
+    /// Runs the next generation, returning details about the individuals and their scores achieved.    
     pub fn run_generation(&mut self) -> Vec<u32> {
         flatten_for_wasm(self.algorithm.run_generation())
     }
@@ -51,15 +48,23 @@ impl WasmGeneticAlgorithm {
     }
 }
 
+/// Results are flattened in order to be passed back out of wasm.
+/// The format is [individual 1 castle 1 soldiers, i1c2, ..., i1 score, i2c1, ...].
 fn flatten_for_wasm(results: &[IndividualResult]) -> Vec<u32> {
-    results
-        .iter()
-        .flat_map(|r| {
-            let mut flattened = r.details.soldier_distribution.clone();
-            flattened.push(r.score);
-            flattened
-        })
-        .collect()
+    match results.iter().next() {
+        None => vec![],
+        Some(result) => {
+            let mut output =
+                Vec::with_capacity(results.len() * (result.details.soldier_distribution.len() + 1));
+            for r in results {
+                for &n in &r.details.soldier_distribution {
+                    output.push(n);
+                }
+                output.push(r.score);
+            }
+            output
+        }
+    }
 }
 
 #[wasm_bindgen]

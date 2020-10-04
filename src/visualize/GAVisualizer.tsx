@@ -69,5 +69,5 @@ export function GAVisualizer({ numSoldiers, castlePoints, populationSize, scorin
 
 function runGeneration(algorithm: WasmGeneticAlgorithm) {
   const result = algorithm.run_generation();
-  return new GenerationResult(result, algorithm.num_individuals(), algorithm.scoring());
+  return new GenerationResult(result, algorithm.num_individuals(), algorithm.num_castles(), algorithm.scoring());
 }
