@@ -43,8 +43,7 @@ impl GeneticAlgorithm {
         // Evaluate scores for each individual.
         let generation_results = evaluate(generation, &self.castle_points, self.scoring);
         // Remember results for the next round.
-        self.current_generation = None;
-        self.current_generation.get_or_insert(generation_results)
+        self.current_generation.insert(generation_results)
     }
 
     fn generation_from_previous(
@@ -256,7 +255,7 @@ impl Individual {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum Scoring {
     Wins,
     Points,
