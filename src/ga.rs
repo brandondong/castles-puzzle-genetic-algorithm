@@ -1,4 +1,4 @@
-use rand::random;
+use rand::{rngs::ThreadRng, Rng};
 use std::cmp::Ordering;
 
 pub struct GeneticAlgorithm {
@@ -7,6 +7,8 @@ pub struct GeneticAlgorithm {
     pub castle_points: Vec<u32>,
     num_soldiers: u32,
     pub scoring: Scoring,
+    mutation_rate: f64,
+    rng: ThreadRng,
 }
 
 impl GeneticAlgorithm {
@@ -15,13 +17,17 @@ impl GeneticAlgorithm {
         castle_points: Vec<u32>,
         num_soldiers: u32,
         scoring: Scoring,
+        mutation_rate: f64,
     ) -> Self {
+        assert!(mutation_rate >= 0f64 && mutation_rate <= 1f64);
         Self {
             current_generation: None,
             num_individuals,
             castle_points,
             num_soldiers,
             scoring,
+            mutation_rate,
+            rng: rand::thread_rng(),
         }
     }
 
@@ -31,12 +37,24 @@ impl GeneticAlgorithm {
             None => {
                 // First generation.
                 (0..self.num_individuals)
-                    .map(|_| uniform_random_individual(self.castle_points.len(), self.num_soldiers))
+                    .map(|_| {
+                        uniform_random_individual(
+                            self.castle_points.len(),
+                            self.num_soldiers,
+                            &mut self.rng,
+                        )
+                    })
                     .collect()
             }
             Some(previous_generation) => {
                 // Use the scores of the previous to create the new generation.
-                self.generation_from_previous(previous_generation)
+                generation_from_previous(
+                    previous_generation,
+                    &self.castle_points,
+                    self.num_individuals,
+                    self.mutation_rate,
+                    &mut self.rng,
+                )
             }
         };
 
@@ -45,39 +63,48 @@ impl GeneticAlgorithm {
         // Remember results for the next round.
         self.current_generation.insert(generation_results)
     }
-
-    fn generation_from_previous(
-        &self,
-        previous_generation: &[IndividualResult],
-    ) -> Vec<Individual> {
-        let cumulative_sum: Vec<(u32, &Individual)> = previous_generation
-            .iter()
-            .filter(|i| i.score != 0)
-            .scan(0, |acc, i| {
-                *acc += i.score;
-                Some((*acc, &i.details))
-            })
-            .collect();
-        // Sort castle indices by points.
-        let mut sorted_castles: Vec<_> = self.castle_points.iter().enumerate().collect();
-        sorted_castles.sort_by(|a, b| a.1.cmp(b.1));
-        let sorted_castles: Vec<usize> = sorted_castles.iter().map(|a| a.0).collect();
-        (0..self.num_individuals)
-            .map(|_| {
-                // Roulette wheel selection for both parents.
-                let p1 = roulette_select(previous_generation, &cumulative_sum);
-                let p2 = roulette_select(previous_generation, &cumulative_sum);
-                // Crossover.
-                let mut child = crossover(p1, p2);
-                // Mutation.
-                mutate(&mut child, &sorted_castles);
-                child
-            })
-            .collect()
-    }
 }
 
-fn uniform_random_individual(num_castles: usize, num_soldiers: u32) -> Individual {
+fn generation_from_previous<R: Rng>(
+    previous_generation: &[IndividualResult],
+    castle_points: &[u32],
+    num_individuals: u32,
+    mutation_rate: f64,
+    rng: &mut R,
+) -> Vec<Individual> {
+    let cumulative_sum: Vec<(u32, &Individual)> = previous_generation
+        .iter()
+        .filter(|i| i.score != 0)
+        .scan(0, |acc, i| {
+            *acc += i.score;
+            Some((*acc, &i.details))
+        })
+        .collect();
+    // Sort castle indices by points.
+    let mut sorted_castles: Vec<_> = castle_points.iter().enumerate().collect();
+    sorted_castles.sort_by(|a, b| a.1.cmp(b.1));
+    let sorted_castles: Vec<usize> = sorted_castles.iter().map(|a| a.0).collect();
+    (0..num_individuals)
+        .map(|_| {
+            // Roulette wheel selection for both parents.
+            let p1 = roulette_select(previous_generation, &cumulative_sum, rng);
+            let p2 = roulette_select(previous_generation, &cumulative_sum, rng);
+            // Crossover.
+            let mut child = crossover(p1, p2, rng);
+            // Mutation.
+            if rng.gen::<f64>() < mutation_rate {
+                mutate(&mut child, &sorted_castles, rng);
+            }
+            child
+        })
+        .collect()
+}
+
+fn uniform_random_individual<R: Rng>(
+    num_castles: usize,
+    num_soldiers: u32,
+    rng: &mut R,
+) -> Individual {
     let mut soldier_distribution = Vec::with_capacity(num_castles);
     // Pick a partitioning of soldiers with uniform probability (i.e. [1, 1, 1] is equally likely as [3, 0, 0]).
     // See https://en.wikipedia.org/wiki/Stars_and_bars_%28combinatorics%29.
@@ -93,7 +120,7 @@ fn uniform_random_individual(num_castles: usize, num_soldiers: u32) -> Individua
         }
         let remaining = total - i;
         let needed = choose - chosen;
-        if random::<f64>() < needed as f64 / remaining as f64 {
+        if rng.gen::<f64>() < needed as f64 / remaining as f64 {
             let current_index = i as i32;
             let num_soldiers = (current_index - prev_index - 1) as u32;
             soldier_distribution.push(num_soldiers);
@@ -109,20 +136,21 @@ fn uniform_random_individual(num_castles: usize, num_soldiers: u32) -> Individua
     }
 }
 
-fn roulette_select<'a>(
+fn roulette_select<'a, R: Rng>(
     previous_generation: &'a [IndividualResult],
     cumulative_sum: &'a [(u32, &Individual)],
+    rng: &mut R,
 ) -> &'a Individual {
     // e.g. [3, 5] -> 5.
     let total_sum = match cumulative_sum.last() {
         None => {
             // All individuals are pefectly tied with 0 fitness.
-            let index = (random::<f64>() * previous_generation.len() as f64) as usize;
+            let index = (rng.gen::<f64>() * previous_generation.len() as f64) as usize;
             return &previous_generation[index].details;
         }
         Some(total) => total.0,
     };
-    let p = (random::<f64>() * total_sum as f64) as u32 + 1; // Random number from 1 to 5.
+    let p = (rng.gen::<f64>() * total_sum as f64) as u32 + 1; // Random number from 1 to 5.
     let r = cumulative_sum.binary_search_by(|s| s.0.cmp(&p));
     match r {
         Ok(index) => {
@@ -136,7 +164,7 @@ fn roulette_select<'a>(
     }
 }
 
-fn crossover(p1: &Individual, p2: &Individual) -> Individual {
+fn crossover<R: Rng>(p1: &Individual, p2: &Individual, rng: &mut R) -> Individual {
     let mut rounded_down = Vec::new();
     let mut soldier_distribution = Vec::with_capacity(p1.soldier_distribution.len());
     // Average the soldiers sent for each castle.
@@ -163,7 +191,7 @@ fn crossover(p1: &Individual, p2: &Individual) -> Individual {
         }
         let remaining = total - i;
         let needed = choose - chosen;
-        if random::<f64>() < needed as f64 / remaining as f64 {
+        if rng.gen::<f64>() < needed as f64 / remaining as f64 {
             soldier_distribution[castle_index] += 1;
             chosen += 1;
         }
@@ -173,14 +201,14 @@ fn crossover(p1: &Individual, p2: &Individual) -> Individual {
     }
 }
 
-fn mutate(individual: &mut Individual, sorted_castles: &[usize]) {
+fn mutate<R: Rng>(individual: &mut Individual, sorted_castles: &[usize], rng: &mut R) {
     // Choose a random pair of neighboring castles to swap soldiers between.
-    let left_index = (random::<f64>() * (sorted_castles.len() - 1) as f64) as usize;
+    let left_index = (rng.gen::<f64>() * (sorted_castles.len() - 1) as f64) as usize;
     let c1 = sorted_castles[left_index];
     let c2 = sorted_castles[left_index + 1];
     // Regenerate a uniformly random distribution for those two castles.
     let total = individual.soldier_distribution[c1] + individual.soldier_distribution[c2];
-    let left = (random::<f64>() * (total + 1) as f64) as u32;
+    let left = (rng.gen::<f64>() * (total + 1) as f64) as u32;
     let right = total - left;
     individual.soldier_distribution[c1] = left;
     individual.soldier_distribution[c2] = right;
@@ -262,11 +290,13 @@ pub enum Scoring {
 }
 #[cfg(test)]
 mod tests {
+    use rand::thread_rng;
+
     use super::*;
 
     #[test]
     fn test_end_to_end() {
-        let mut ga = GeneticAlgorithm::new(5, vec![1, 2, 3], 10, Scoring::Wins);
+        let mut ga = GeneticAlgorithm::new(5, vec![1, 2, 3], 10, Scoring::Wins, 1f64);
         for _ in 0..10 {
             let results = ga.run_generation();
             assert_eq!(results.len(), 5);
@@ -281,7 +311,8 @@ mod tests {
     fn test_generate_random_individuals() {
         for num_soldiers in 1..10 {
             for num_castles in 3..10 {
-                let individual = uniform_random_individual(num_castles, num_soldiers);
+                let individual =
+                    uniform_random_individual(num_castles, num_soldiers, &mut thread_rng());
                 let total_soldiers: u32 = individual.soldier_distribution.iter().sum();
                 assert_eq!(total_soldiers, num_soldiers);
             }
@@ -317,7 +348,7 @@ mod tests {
         ];
         for _ in 0..10 {
             // Can't really assert any properties, just ensure no panic.
-            roulette_select(&prev_results, &cumulative_sum);
+            roulette_select(&prev_results, &cumulative_sum, &mut thread_rng());
         }
     }
 
@@ -337,7 +368,7 @@ mod tests {
                 score: 0,
             },
         ];
-        roulette_select(&prev_results, &Vec::new());
+        roulette_select(&prev_results, &Vec::new(), &mut thread_rng());
     }
 
     #[test]
@@ -348,7 +379,7 @@ mod tests {
         let i2 = Individual {
             soldier_distribution: vec![2, 0, 2],
         };
-        let child = crossover(&i1, &i2);
+        let child = crossover(&i1, &i2, &mut thread_rng());
         assert_eq!(child.soldier_distribution, vec![2, 1, 1]);
     }
 
@@ -361,7 +392,7 @@ mod tests {
             let i2 = Individual {
                 soldier_distribution: vec![2, 0, 3],
             };
-            let s = crossover(&i1, &i2).soldier_distribution;
+            let s = crossover(&i1, &i2, &mut thread_rng()).soldier_distribution;
             assert_eq!(s[0], 2);
             assert!(s[1] == 1 && s[2] == 2 || s[1] == 2 && s[2] == 1);
         }
@@ -375,7 +406,7 @@ mod tests {
             let mut i = Individual {
                 soldier_distribution: vec![3, 3, 3],
             };
-            mutate(&mut i, &sorted_castles);
+            mutate(&mut i, &sorted_castles, &mut thread_rng());
             let soldiers = i.soldier_distribution;
             let total_soldiers: u32 = soldiers.iter().sum();
             assert_eq!(total_soldiers, 9);
