@@ -1,4 +1,5 @@
 mod ga;
+mod util;
 
 use clap::Parser;
 use ga::{GeneticAlgorithm, Scoring};

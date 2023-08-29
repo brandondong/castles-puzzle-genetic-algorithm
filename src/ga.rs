@@ -1,6 +1,8 @@
 use rand::{rngs::ThreadRng, Rng};
 use std::cmp::Ordering;
 
+use crate::util;
+
 pub struct GeneticAlgorithm {
     current_generation: Option<Vec<IndividualResult>>,
     pub num_individuals: u32,
@@ -19,7 +21,7 @@ impl GeneticAlgorithm {
         scoring: Scoring,
         mutation_rate: f64,
     ) -> Self {
-        assert!(mutation_rate >= 0f64 && mutation_rate <= 1f64);
+        assert!((0f64..=1f64).contains(&mutation_rate));
         Self {
             current_generation: None,
             num_individuals,
@@ -109,26 +111,21 @@ fn uniform_random_individual<R: Rng>(
     // Pick a partitioning of soldiers with uniform probability (i.e. [1, 1, 1] is equally likely as [3, 0, 0]).
     // See https://en.wikipedia.org/wiki/Stars_and_bars_%28combinatorics%29.
     // We have to choose bar indices from stars + bars total.
-    let choose = num_castles as u32 - 1; // Bars (castle dividers).
-    let total = num_soldiers + choose; // Stars (soldiers) + bars.
+    let choose = num_castles - 1; // Bars (castle dividers).
+    let total = num_soldiers as usize + choose; // Stars (soldiers) + bars.
     let mut prev_index = -1;
-    // Knuth's algorithm:
-    let mut chosen = 0;
-    for i in 0..total {
-        if chosen >= choose {
-            break;
-        }
-        let remaining = total - i;
-        let needed = choose - chosen;
-        if rng.gen::<f64>() < needed as f64 / remaining as f64 {
-            let current_index = i as i32;
+    util::random_sample(
+        0..total,
+        choose,
+        |i| {
+            let current_index = i as isize;
             let num_soldiers = (current_index - prev_index - 1) as u32;
             soldier_distribution.push(num_soldiers);
             prev_index = current_index;
-            chosen += 1;
-        }
-    }
-    let current_index = total as i32;
+        },
+        rng,
+    );
+    let current_index = total as isize;
     let num_soldiers = (current_index - prev_index - 1) as u32;
     soldier_distribution.push(num_soldiers);
     Individual {
@@ -180,22 +177,14 @@ fn crossover<R: Rng>(p1: &Individual, p2: &Individual, rng: &mut R) -> Individua
             rounded_down.push(i);
         }
     }
-    let total = rounded_down.len();
     // There must be an even number of indices rounded down.
-    let choose = total / 2;
-    // Knuth's algorithm:
-    let mut chosen = 0;
-    for (i, castle_index) in rounded_down.into_iter().enumerate() {
-        if chosen >= choose {
-            break;
-        }
-        let remaining = total - i;
-        let needed = choose - chosen;
-        if rng.gen::<f64>() < needed as f64 / remaining as f64 {
-            soldier_distribution[castle_index] += 1;
-            chosen += 1;
-        }
-    }
+    let choose = rounded_down.len() / 2;
+    util::random_sample(
+        rounded_down,
+        choose,
+        |castle_index| soldier_distribution[castle_index] += 1,
+        rng,
+    );
     Individual {
         soldier_distribution,
     }
