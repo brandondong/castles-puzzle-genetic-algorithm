@@ -16,7 +16,8 @@ where
         if num_choose == 0 {
             break;
         }
-        if rng.gen::<f64>() < num_choose as f64 / total as f64 {
+        // Yes with probability = num_choose/total.
+        if rng.gen_range(1..=total) <= num_choose {
             f(val);
             num_choose -= 1;
         }

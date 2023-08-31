@@ -52,8 +52,8 @@ impl GeneticAlgorithm {
                 // Use the scores of the previous to create the new generation.
                 generation_from_previous(
                     previous_generation,
-                    &self.castle_points,
                     self.num_individuals,
+                    self.num_soldiers,
                     self.mutation_rate,
                     &mut self.rng,
                 )
@@ -69,8 +69,8 @@ impl GeneticAlgorithm {
 
 fn generation_from_previous<R: Rng>(
     previous_generation: &[IndividualResult],
-    castle_points: &[u32],
     num_individuals: u32,
+    num_soldiers: u32,
     mutation_rate: f64,
     rng: &mut R,
 ) -> Vec<Individual> {
@@ -82,10 +82,6 @@ fn generation_from_previous<R: Rng>(
             Some((*acc, &i.details))
         })
         .collect();
-    // Sort castle indices by points.
-    let mut sorted_castles: Vec<_> = castle_points.iter().enumerate().collect();
-    sorted_castles.sort_by(|a, b| a.1.cmp(b.1));
-    let sorted_castles: Vec<usize> = sorted_castles.iter().map(|a| a.0).collect();
     (0..num_individuals)
         .map(|_| {
             // Roulette wheel selection for both parents.
@@ -94,9 +90,7 @@ fn generation_from_previous<R: Rng>(
             // Crossover.
             let mut child = crossover(p1, p2, rng);
             // Mutation.
-            if rng.gen::<f64>() < mutation_rate {
-                mutate(&mut child, &sorted_castles, rng);
-            }
+            mutate(&mut child, num_soldiers, mutation_rate, rng);
             child
         })
         .collect()
@@ -142,12 +136,12 @@ fn roulette_select<'a, R: Rng>(
     let total_sum = match cumulative_sum.last() {
         None => {
             // All individuals are pefectly tied with 0 fitness.
-            let index = (rng.gen::<f64>() * previous_generation.len() as f64) as usize;
+            let index = rng.gen_range(0..previous_generation.len());
             return &previous_generation[index].details;
         }
         Some(total) => total.0,
     };
-    let p = (rng.gen::<f64>() * total_sum as f64) as u32 + 1; // Random number from 1 to 5.
+    let p = rng.gen_range(1..=total_sum); // Random number from 1 to 5.
     let r = cumulative_sum.binary_search_by(|s| s.0.cmp(&p));
     match r {
         Ok(index) => {
@@ -190,17 +184,48 @@ fn crossover<R: Rng>(p1: &Individual, p2: &Individual, rng: &mut R) -> Individua
     }
 }
 
-fn mutate<R: Rng>(individual: &mut Individual, sorted_castles: &[usize], rng: &mut R) {
-    // Choose a random pair of neighboring castles to swap soldiers between.
-    let left_index = (rng.gen::<f64>() * (sorted_castles.len() - 1) as f64) as usize;
-    let c1 = sorted_castles[left_index];
-    let c2 = sorted_castles[left_index + 1];
-    // Regenerate a uniformly random distribution for those two castles.
-    let total = individual.soldier_distribution[c1] + individual.soldier_distribution[c2];
-    let left = (rng.gen::<f64>() * (total + 1) as f64) as u32;
-    let right = total - left;
-    individual.soldier_distribution[c1] = left;
-    individual.soldier_distribution[c2] = right;
+fn mutate<R: Rng>(individual: &mut Individual, num_soldiers: u32, mutation_rate: f64, rng: &mut R) {
+    // Randomly sample soldiers to redistribute.
+    let num_move = (num_soldiers as f64 * mutation_rate).floor() as usize;
+    let num_castles = individual.soldier_distribution.len();
+
+    let mut take_from = vec![0u32; num_castles];
+    let mut current_castle = 0;
+    let mut current_castle_soldiers = individual.soldier_distribution[0];
+    let mut prev_i = 0;
+    util::random_sample(
+        1..num_soldiers + 1,
+        num_move,
+        |i| {
+            // Find the castle they're in.
+            let mut diff = i - prev_i;
+            loop {
+                if current_castle_soldiers >= diff {
+                    // Found it!
+                    current_castle_soldiers -= diff;
+                    break;
+                } else {
+                    diff -= current_castle_soldiers;
+                    current_castle += 1;
+                    current_castle_soldiers = individual.soldier_distribution[current_castle];
+                }
+            }
+
+            // Record all the subtractions of soldiers.
+            take_from[current_castle] += 1;
+            prev_i = i;
+        },
+        rng,
+    );
+    // Remove those soldiers.
+    for (dst, sub) in individual.soldier_distribution.iter_mut().zip(take_from) {
+        *dst -= sub;
+    }
+    // And then redistribute them uniformly at random.
+    for _ in 0..num_move {
+        let chosen = rng.gen_range(0..num_castles);
+        individual.soldier_distribution[chosen] += 1;
+    }
 }
 
 fn evaluate(
@@ -388,21 +413,26 @@ mod tests {
     }
 
     #[test]
-    fn test_mutate() {
-        // First castle is worth the most points and the second is worth the least.
-        let sorted_castles = vec![1, 2, 0];
+    fn test_mutate_unchanged_num_soldiers() {
         for _ in 0..10 {
-            let mut i = Individual {
-                soldier_distribution: vec![3, 3, 3],
-            };
-            mutate(&mut i, &sorted_castles, &mut thread_rng());
-            let soldiers = i.soldier_distribution;
-            let total_soldiers: u32 = soldiers.iter().sum();
-            assert_eq!(total_soldiers, 9);
-            assert!(soldiers.iter().any(|&s| s == 3));
-            // Must not have swapped between the first and second castles.
-            assert!(soldiers[0] == 3 || soldiers[1] == 3);
+            for rate in [0.5, 1.0] {
+                let mut i = Individual {
+                    soldier_distribution: vec![3, 3, 3],
+                };
+                mutate(&mut i, 9, rate, &mut thread_rng());
+                let new_total: u32 = i.soldier_distribution.into_iter().sum();
+                assert_eq!(9, new_total);
+            }
         }
+    }
+
+    #[test]
+    fn test_mutation_rate_zero() {
+        let mut i = Individual {
+            soldier_distribution: vec![3, 3, 3],
+        };
+        mutate(&mut i, 9, 0f64, &mut thread_rng());
+        assert_eq!(vec![3, 3, 3], i.soldier_distribution);
     }
 
     #[test]
